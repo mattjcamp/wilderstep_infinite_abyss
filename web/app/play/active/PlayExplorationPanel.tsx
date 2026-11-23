@@ -24,6 +24,7 @@
  * driving the party after a click.
  */
 
+import { useTouchUi } from "./PlayTouchControls";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { adventureDay, timeStr } from "@/battle/world/GameTime";
 import { Sfx } from "@/battle/audio/Sfx";
@@ -70,6 +71,7 @@ export function PlayExplorationPanel({
   startClockMinutes: number;
   onOpenFullLog: () => void;
 }) {
+  const touchUi = useTouchUi();
   return (
     <aside
       className={`${hidden ? "hidden" : "flex"} h-full w-[20%] min-w-[220px] max-w-[460px] shrink-0 flex-col gap-2 border-r border-parchment/15 bg-ink/95 p-2`}
@@ -82,7 +84,11 @@ export function PlayExplorationPanel({
         onOpenFullLog={onOpenFullLog}
       />
       <p className="shrink-0 px-1 text-right text-xs text-parchment/55">
-        Press <span className="font-mono text-parchment/80">H</span> for Help
+        {touchUi ? (
+          <>Tap <span className="font-mono text-parchment/80">Help</span> for tips</>
+        ) : (
+          <>Press <span className="font-mono text-parchment/80">H</span> for Help</>
+        )}
       </p>
     </aside>
   );

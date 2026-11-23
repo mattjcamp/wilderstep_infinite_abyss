@@ -191,7 +191,7 @@ export function PlayNpcDialogOverlay({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-xl flex-col rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
+        className="flex max-h-[90dvh] w-full max-w-xl flex-col rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
       >
         <header className="flex items-center gap-3 border-b border-parchment/15 px-3 py-2">
           {npcSprite ? (

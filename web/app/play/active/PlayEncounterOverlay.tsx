@@ -189,7 +189,7 @@ export function PlayEncounterOverlay({
       aria-modal="true"
       aria-label="Enemy encounter"
     >
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg border border-ember/40 bg-ink/95 shadow-2xl">
+      <div className="flex max-h-[90dvh] w-full max-w-2xl flex-col rounded-lg border border-ember/40 bg-ink/95 shadow-2xl">
         <header className="flex items-center gap-4 border-b border-parchment/15 px-4 py-3">
           {lead?.sprite ? (
             // eslint-disable-next-line @next/next/no-img-element

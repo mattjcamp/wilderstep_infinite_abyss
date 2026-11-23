@@ -10,7 +10,18 @@
  * browser.
  */
 
+import type { Viewport } from "next";
 import { PlayHost } from "./PlayHost";
+
+/** Game screen only: pin the zoom so pinches / double-taps on a tablet
+ *  don't zoom the page instead of playing. No effect on desktop. */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
 
 export default function ActivePlayPage() {
   return <PlayHost />;

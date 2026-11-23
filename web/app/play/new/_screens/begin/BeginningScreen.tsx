@@ -25,6 +25,7 @@ import { playPartyHref } from "@/play/playRoutes";
 import { getModuleSource } from "@/data_model/sourceConfig";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTouchUi } from "../../../active/PlayTouchControls";
 import Link from "next/link";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
@@ -81,6 +82,7 @@ export function BeginningScreen({
   description?: string;
   trailer?: string;
 }) {
+  const touchUi = useTouchUi();
   const router = useRouter();
   const [draft, setDraft] = useState<PartyDraft | null | "loading">(
     "loading",
@@ -292,7 +294,7 @@ export function BeginningScreen({
           <p className="text-parchment/65">Beginning…</p>
         ) : showPrompt ? (
           <p className="animate-pulse text-parchment/55">
-            Press any key to begin
+            {touchUi ? "Tap to begin" : "Press any key to begin"}
           </p>
         ) : null}
       </div>

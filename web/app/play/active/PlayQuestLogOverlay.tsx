@@ -121,7 +121,7 @@ export function PlayQuestLogOverlay({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
+        className="phone-readable max-h-[90dvh] w-full max-w-2xl overflow-auto rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
           <h2 className="font-display text-3xl text-parchment">

@@ -2022,3 +2022,32 @@ describe("MapSimulation — time-gated lairs", () => {
     expect(roamerCounts()).toBe(1);
   });
 });
+
+describe("MapSimulation.planWalkTo — touch tap-to-walk", () => {
+  it("routes around a wall and ends in a bump on an NPC", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({ walkable: false });
+    grid[0][2] = cell({ npc: "bob" });
+    const sim = makeSim({ grid });
+    const path = sim.planWalkTo(2, 0)!;
+    // Party at (0,0), wall at (1,0), NPC at (2,0): down, right,
+    // right (passing under the wall), then the bump up into the NPC.
+    expect(path.length).toBe(4);
+    expect(path[path.length - 1]).toBe("up");
+  });
+
+  it("walks the party to a tapped open tile via stepInDirection", () => {
+    const sim = makeSim();
+    const path = sim.planWalkTo(2, 2)!;
+    for (const d of path) sim.stepInDirection(d);
+    expect(sim.snapshot().pos).toEqual({ col: 2, row: 2 });
+  });
+
+  it("returns null for walls and for the party's own tile", () => {
+    const grid = makeGrid();
+    grid[3][3] = cell({ walkable: false });
+    const sim = makeSim({ grid });
+    expect(sim.planWalkTo(3, 3)).toBeNull();
+    expect(sim.planWalkTo(0, 0)).toBeNull();
+  });
+});

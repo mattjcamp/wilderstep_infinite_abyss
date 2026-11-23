@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   title: "Wilderstep: Infinite Abyss",
   description:
     "A turn-based RPG, loosely inspired by classic D&D and Ultima games.",
+  // iPhone / iPad "Add to Home Screen": launch without Safari's
+  // toolbars so the game gets the whole screen. Only iOS reads these
+  // tags; desktop browsers ignore them. (The icon is app/apple-icon.png.)
+  appleWebApp: {
+    capable: true,
+    title: "Wilderstep",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export default function RootLayout({

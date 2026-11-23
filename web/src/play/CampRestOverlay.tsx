@@ -94,7 +94,7 @@ export function PlayCampRestOverlay({
         role="dialog"
         aria-modal="true"
         aria-labelledby="camp-title"
-        className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-lg border border-orange-300/40 bg-ink/95 shadow-2xl shadow-orange-500/20"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-lg border border-orange-300/40 bg-ink/95 shadow-2xl shadow-orange-500/20"
       >
         <header className="flex flex-col items-center px-5 pt-5">
           <Campfire />

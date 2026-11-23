@@ -9,6 +9,7 @@
  * Read-only. ESC and H close.
  */
 
+import { useTouchUi } from "./PlayTouchControls";
 import { useEffect, useState } from "react";
 import { Soundtrack } from "@/audio/SoundtrackPlayer";
 
@@ -38,6 +39,31 @@ const COMBAT_SHORTCUTS: ShortcutRow[] = [
   { key: "1 - 9", description: "Pick an option from a list (target, spell, item)" },
 ];
 
+// Touch versions of the three cheat sheets — on-screen controls in
+// place of keys. (Phones show this page-based Help; see PlayHost.)
+const TOUCH_MOVE: ShortcutRow[] = [
+  { key: "▲ ▼ ◀ ▶", description: "Move one tile — hold to keep walking" },
+  { key: "Tap map", description: "Walk to the tapped tile (or talk / open / shop there)" },
+  { key: "Wait", description: "Pass a turn in place" },
+  { key: "Map", description: "Hold to see the whole map" },
+];
+
+const TOUCH_SCREENS: ShortcutRow[] = [
+  { key: "Party", description: "Roster, gold, shared stash, party effects" },
+  { key: "Quests", description: "Active quests, what's left to do, completed ones" },
+  { key: "Log", description: "Full back-buffer of in-world messages" },
+  { key: "Journal", description: "The lore you have discovered" },
+  { key: "Hold", description: "Press and hold anything for its details" },
+];
+
+const TOUCH_COMBAT: ShortcutRow[] = [
+  { key: "Tap tile", description: "Walk there; tap an enemy at a line's end to attack" },
+  { key: "Tap icon", description: "First tap shows the action, second tap does it" },
+  { key: "Aim", description: "Tap a tile to aim; tap it again to fire / cast / throw" },
+  { key: "Cancel", description: "Stop aiming (button in the actions panel)" },
+  { key: "Log / ⓘ", description: "Tap the log or COMBATANTS for more detail" },
+];
+
 const TIPS: string[] = [
   "Torches and the Light spell brighten the party's light radius. Effects with a duration count down per step you take — watch the Effects panel on the Party screen.",
   "Detect Traps reveals nearby trap tiles as red X marks when at least one party member is a Thief (or Ranger Lv 3+) and you can see the tile in your light radius.",
@@ -51,6 +77,7 @@ export function PlayHelpTipsOverlay({
 }: {
   onClose: () => void;
 }) {
+  const touchUi = useTouchUi();
   // Soundtrack mute toggle — reads the persisted flag on open so a
   // refresh-then-open shows the right state. Local mirror is needed
   // because the player module exposes a getter but not a subscribe
@@ -104,7 +131,7 @@ export function PlayHelpTipsOverlay({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
+        className="phone-readable max-h-[90dvh] w-full max-w-2xl overflow-auto rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
           <h2 className="font-display text-base text-parchment">
@@ -151,9 +178,12 @@ export function PlayHelpTipsOverlay({
               </label>
             </div>
           </section>
-          <ShortcutSection title="Movement" rows={MOVE_SHORTCUTS} />
-          <ShortcutSection title="Inspector Screens" rows={INSPECTOR_SHORTCUTS} />
-          <ShortcutSection title="Combat" rows={COMBAT_SHORTCUTS} />
+          <ShortcutSection title="Movement" rows={touchUi ? TOUCH_MOVE : MOVE_SHORTCUTS} />
+          <ShortcutSection
+            title="Inspector Screens"
+            rows={touchUi ? TOUCH_SCREENS : INSPECTOR_SHORTCUTS}
+          />
+          <ShortcutSection title="Combat" rows={touchUi ? TOUCH_COMBAT : COMBAT_SHORTCUTS} />
           <section>
             <h3 className="text-[11px] uppercase tracking-wide text-amber-300">
               Tips

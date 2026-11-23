@@ -109,7 +109,7 @@ export function NpcDialogOverlay({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex max-h-[85vh] w-[36rem] max-w-full flex-col rounded border border-parchment/25 bg-ink/95 shadow-xl">
+      <div className="flex max-h-[85dvh] w-[36rem] max-w-full flex-col rounded border border-parchment/25 bg-ink/95 shadow-xl">
         {/* Header */}
         <header className="flex items-center gap-3 border-b border-parchment/15 px-4 py-3">
           {spriteUrl ? (

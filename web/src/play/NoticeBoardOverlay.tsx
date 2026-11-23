@@ -82,7 +82,7 @@ export function PlayNoticeBoardOverlay({
         role="dialog"
         aria-modal="true"
         aria-labelledby="board-title"
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg border border-amber-200/30 bg-ink/95 shadow-2xl"
+        className="flex max-h-[90dvh] w-full max-w-2xl flex-col rounded-lg border border-amber-200/30 bg-ink/95 shadow-2xl"
       >
         <header className="border-b border-parchment/15 px-5 pb-3 pt-4">
           <h2 id="board-title" className="font-display text-3xl text-parchment">

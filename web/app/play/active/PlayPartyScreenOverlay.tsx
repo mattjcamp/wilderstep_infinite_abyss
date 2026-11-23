@@ -1912,7 +1912,7 @@ export function PlayPartyScreenOverlay({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
+        className="max-h-[90dvh] w-full max-w-3xl overflow-auto rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
           <div className="flex items-center gap-2">
@@ -2211,7 +2211,7 @@ function TinkerPicker({
       <div
         ref={rootRef}
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[80vh] w-full max-w-sm flex-col rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
+        className="flex max-h-[80dvh] w-full max-w-sm flex-col rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
           <h3 className="font-display text-sm text-parchment">
@@ -2405,7 +2405,7 @@ function BrewPicker({
       <div
         ref={rootRef}
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[80vh] w-full max-w-md flex-col rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
+        className="flex max-h-[80dvh] w-full max-w-md flex-col rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
           <h3 className="font-display text-sm text-parchment">

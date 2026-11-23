@@ -18,6 +18,7 @@
  * prefers-reduced-motion (no confetti / spin / count-up).
  */
 
+import { useTouchUi } from "./PlayTouchControls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AdventureRecap } from "@/play/adventureRecap";
 
@@ -83,6 +84,7 @@ export function PlayMainQuestFinale({
   recap: AdventureRecap;
   onDismiss: () => void;
 }) {
+  const touchUi = useTouchUi();
   const reduced = usePrefersReducedMotion();
   const openedAt = useRef(Date.now());
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -259,7 +261,7 @@ export function PlayMainQuestFinale({
             Continue adventuring
           </button>
           <span className={`text-[10px] text-parchment/40 transition-opacity ${ready ? "opacity-100" : "opacity-0"}`}>
-            Enter to continue
+            {touchUi ? "" : "Enter to continue"}
           </span>
         </div>
       </div>

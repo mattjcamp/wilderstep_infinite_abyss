@@ -55,6 +55,8 @@ import {
 import { PlayMainQuestFinale } from "./PlayMainQuestFinale";
 import { computeAdventureRecap, type AdventureRecap } from "@/play/adventureRecap";
 import { PlayLogOverlay } from "./PlayLogOverlay";
+import { PlayHelpTipsOverlay } from "./PlayHelpTipsOverlay";
+import { PlayQuestLogOverlay } from "./PlayQuestLogOverlay";
 import { PlayLoreOverlay } from "@/play/LoreOverlay";
 import { PlayJournalOverlay } from "./PlayJournalOverlay";
 import { PlayNoticeBoardOverlay } from "@/play/NoticeBoardOverlay";
@@ -702,6 +704,14 @@ import {
   LOGICAL_WIDTH,
 } from "@/util/renderScale";
 import { toggleFullscreen } from "@/util/fullscreen";
+import {
+  ExplorationTouchControls,
+  PhoneControlPanel,
+  RotateDevicePrompt,
+  TouchTooltipLayer,
+  usePhoneLayout,
+  useTouchUi,
+} from "./PlayTouchControls";
 
 /** Cells the kernel reads. Mirrors `TileType` from the editor without
  *  pulling that module's React-side type in. The cell carries every
@@ -1007,6 +1017,11 @@ interface State {
 
 export function PlayHost() {
   const router = useRouter();
+  /** Tablet / phone touch UI (on-screen controls, rotate prompt).
+   *  False on desktop, so none of it renders there. */
+  const touchUi = useTouchUi();
+  /** Phone-sized touch screen: controls replace the side log panel. */
+  const phoneLayout = usePhoneLayout(touchUi);
   const [state, setState] = useState<State>({ kind: "loading" });
   /** Bump to force the load effect to re-run when the current map
    *  changes (cross-map link). Same identity = no reload. */
@@ -1312,6 +1327,63 @@ export function PlayHost() {
     removeItem: (col: number, row: number) => void;
   } | null>(null);
   const overlaysOpenRef = useRef(false);
+
+  // ── Touch tap-to-walk ─────────────────────────────────────────────
+  // Tap a map tile and the party walks there one step at a time, via
+  // the same `stepInDirection` the arrow keys drive (so bumping an NPC
+  // / counter / chest / locked door at the end of the route behaves
+  // exactly like the keyboard). The walk stops on anything that isn't
+  // plain walking (a dialog, fight, trap, map change, being blocked),
+  // when a menu opens, on any key / d-pad press, or on a new tap.
+  // Touch only: the map scene calls this only while `touchUiRef` is on.
+  const touchUiRef = useRef(false);
+  touchUiRef.current = touchUi;
+  const tapWalkCancelRef = useRef<(() => void) | null>(null);
+  const startTapWalkRef = useRef<(col: number, row: number) => void>(() => {});
+  startTapWalkRef.current = (col: number, row: number) => {
+    tapWalkCancelRef.current?.();
+    const sim = simRef.current;
+    if (!sim || overlaysOpenRef.current) return;
+    if (!sim.planWalkTo(col, row)) return;
+    let done = false;
+    let raf = 0;
+    const CONTINUE = new Set(["moved", "state", "log", "npc_moved", "item_picked"]);
+    const stop = () => {
+      if (done) return;
+      done = true;
+      cancelAnimationFrame(raf);
+      unsub();
+      window.removeEventListener("keydown", stop, true);
+      if (tapWalkCancelRef.current === stop) tapWalkCancelRef.current = null;
+    };
+    const unsub = sim.subscribe((ev) => {
+      if (!CONTINUE.has(ev.kind)) stop();
+    });
+    // Any key (real, or a d-pad button's synthetic one) takes over.
+    window.addEventListener("keydown", stop, true);
+    tapWalkCancelRef.current = stop;
+    const tick = () => {
+      if (done) return;
+      if (simRef.current !== sim || overlaysOpenRef.current) return stop();
+      // One step at a time: wait for the slide to finish, like held keys.
+      if (rendererRef.current?.isPartyMoving()) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      // Re-plan every step — wandering NPCs / roamers move around.
+      const path = sim.planWalkTo(col, row);
+      if (!path || path.length === 0) return stop();
+      const before = sim.snapshot().pos;
+      sim.stepInDirection(path[0]);
+      if (done) return;
+      const after = sim.snapshot().pos;
+      // A step that didn't move the party was a bump (or blocked) —
+      // that's the end of the route either way.
+      if (after.col === before.col && after.row === before.row) return stop();
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  };
   /** Pre-override originals for cells on the CURRENTLY MOUNTED map,
    *  keyed `"col,row"`. Stashed (a) by the mount-time tileOverrides
    *  apply pass before it overwrites a cell, and (b) by a live
@@ -2324,9 +2396,11 @@ export function PlayHost() {
   useEffect(() => {
     const screen = helpScreenRef.current;
     if (!screen) return;
-    if (helpTipsOpen) screen.open();
+    // Phones get the page-based Help instead (readable text, native
+    // scrolling) — see the PlayHelpTipsOverlay render below.
+    if (helpTipsOpen && !phoneLayout) screen.open();
     else screen.close();
-  }, [helpTipsOpen]);
+  }, [helpTipsOpen, phoneLayout]);
   // Sync the painted Quest Log with its React state flag. Same
   // pattern as the help screen except `open()` takes data — we read
   // it fresh from `saveRef.current` here so the log shows quest
@@ -2336,7 +2410,8 @@ export function PlayHost() {
   useEffect(() => {
     const screen = questLogScreenRef.current;
     if (!screen) return;
-    if (questLogOpen) {
+    // Phones get the page-based Quest Log instead (see the render).
+    if (questLogOpen && !phoneLayout) {
       const liveSave = saveRef.current ?? state.save;
       if (!liveSave || !state.catalog) return;
       const data: PaintedQuestLogData = {
@@ -2350,7 +2425,7 @@ export function PlayHost() {
     } else {
       screen.close();
     }
-  }, [questLogOpen, state.catalog, state.save]);
+  }, [questLogOpen, state.catalog, state.save, phoneLayout]);
   // Inspector-screen keybindings:
   //
   //   P → Party screen        (roster + stash + effects)
@@ -3992,6 +4067,26 @@ export function PlayHost() {
               this.panModifierHeld = false;
               setPanCursor();
             }
+          });
+          // Touch tap-to-walk: a short, still tap on the map (not the
+          // log strip) walks the party to that tile. See startTapWalkRef.
+          let tapDown: { x: number; y: number; t: number } | null = null;
+          this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
+            tapDown = touchUiRef.current ? { x: p.x, y: p.y, t: p.downTime } : null;
+          });
+          this.input.on("pointerup", (p: Phaser.Input.Pointer) => {
+            const d = tapDown;
+            tapDown = null;
+            if (!d || !touchUiRef.current || overlaysOpenRef.current) return;
+            if (Math.hypot(p.x - d.x, p.y - d.y) > 12 * RENDER_SCALE) return;
+            if (p.upTime - d.t > 500) return;
+            // Taps on the bottom log / clock strip aren't map taps.
+            if (p.y > this.scale.height - PLAY_LOG_HEIGHT * RENDER_SCALE) return;
+            const w = this.cameras.main.getWorldPoint(p.x, p.y);
+            startTapWalkRef.current(
+              Math.floor(w.x / TILE_SIZE),
+              Math.floor(w.y / TILE_SIZE),
+            );
           });
           this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
             if (!isPanModifier(p.event as MouseEvent)) return;
@@ -7709,7 +7804,27 @@ export function PlayHost() {
     //
     // Scope: /play only. The editors live under app/editor/* with
     // their own h-full layout chain and aren't affected by this. */
-    <main className="grid h-dvh w-screen grid-rows-[1fr] overflow-hidden bg-[#0c0c14]">
+    <main
+      className={`grid h-dvh w-screen grid-rows-[1fr] overflow-hidden bg-[#0c0c14]${touchUi ? " select-none" : ""}`}
+      // Touch only: no double-tap zoom, no grey tap flash. Scrolling
+      // inside overlays still works (manipulation keeps panning).
+      style={
+        touchUi
+          ? {
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
+              // No iOS long-press callout — press-and-hold shows our
+              // tooltips instead (TouchTooltipLayer).
+              WebkitTouchCallout: "none",
+              // Keep the game clear of the notch / Dynamic Island and
+              // the home bar (full-screen Home Screen launch).
+              paddingLeft: "env(safe-area-inset-left)",
+              paddingRight: "env(safe-area-inset-right)",
+              paddingBottom: "env(safe-area-inset-bottom)",
+            }
+          : undefined
+      }
+    >
       {/* Stage cell — flexible row. Houses the world canvas AND the
        *  combat canvas as absolutely-positioned siblings so toggling
        *  combat is a `display: none` swap rather than a layout shift.
@@ -7726,12 +7841,13 @@ export function PlayHost() {
          *  battle scene gets the full width (hidden, not unmounted, so
          *  the log keeps its timestamps). The world canvas's
          *  ResizeObserver re-shapes the frame when it appears / goes. */}
+        {phoneLayout ? <PhoneControlPanel hidden={!!combat} /> : null}
         <PlayExplorationPanel
+          hidden={!!combat || phoneLayout}
           messages={logMessages}
           storyLines={storyLines}
           clockMinutes={clockMinutes}
           startClockMinutes={startClockRef.current}
-          hidden={!!combat}
           onOpenFullLog={() => setLogOpen(true)}
         />
         <div className="relative min-w-0 flex-1">
@@ -7799,9 +7915,15 @@ export function PlayHost() {
           // on the same turn-order see nothing extra. No effect in
           // daylight fights (darkness gate is false).
           partyInfravisionActive
+          phoneLayout={phoneLayout}
           onResolved={onCombatResolved}
         />
       ) : null}
+        {touchUi && state.save ? (
+          // Combat needs no overlay: the battle scene handles touch
+          // itself (tap tiles / icons, in-panel Cancel while aiming).
+          combat || phoneLayout ? null : <ExplorationTouchControls />
+        ) : null}
         </div>
       </div>
 
@@ -7959,6 +8081,27 @@ export function PlayHost() {
             />
           )
         : null}
+
+      {/* Phones: page-based Help + Quest Log. The canvas-painted
+          versions are laid out for a 720-tall frame and end up with
+          ~6px text on a phone; these use normal text sizes and scroll
+          natively. Same open flags, so gating is unchanged. */}
+      {phoneLayout && helpTipsOpen ? (
+        <PlayHelpTipsOverlay onClose={() => setHelpTipsOpen(false)} />
+      ) : null}
+      {phoneLayout && questLogOpen && state.catalog ? (() => {
+        const liveSave = saveRef.current ?? state.save;
+        return (
+          <PlayQuestLogOverlay
+            quests={state.catalog.quests}
+            acceptedQuests={liveSave?.acceptedQuests ?? []}
+            questStepProgress={liveSave?.questStepProgress ?? {}}
+            questStepsDone={liveSave?.questStepsDone ?? {}}
+            turnedInQuests={liveSave?.turnedInQuests ?? []}
+            onClose={() => setQuestLogOpen(false)}
+          />
+        );
+      })() : null}
 
       {partyScreenOpen && state.save ? (
         <PlayPartyScreenOverlay
@@ -8838,6 +8981,8 @@ export function PlayHost() {
           />
         );
       })() : null}
+      {touchUi ? <TouchTooltipLayer /> : null}
+      {touchUi ? <RotateDevicePrompt /> : null}
     </main>
   );
 }

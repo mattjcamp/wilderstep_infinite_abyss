@@ -335,7 +335,7 @@ export function LockDialogOverlay({
       aria-modal="true"
       aria-label="Locked door"
     >
-      <div className="w-[420px] rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl">
+      <div className="max-h-[90dvh] w-[420px] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl">
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="font-display text-xl">Locked Door</h2>
           <span className="font-mono text-xs text-parchment/65">

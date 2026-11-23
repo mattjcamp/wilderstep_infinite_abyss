@@ -43,6 +43,7 @@
  */
 
 import type Phaser from "phaser";
+import { isTouchUiActive } from "@/play/touchMode";
 
 /** Step shape pulled out of the loosely-typed quest payload. The
  *  catalog's `SimQuestRef` type doesn't declare `steps` because the
@@ -186,6 +187,8 @@ export class PaintedQuestLog {
    *  content up means a negative y on the container. Clamped to
    *  `[-(contentHeight - viewportHeight), 0]`. */
   private scrollOffset = 0;
+  /** Removes the touch drag-to-scroll listeners (touch devices only). */
+  private touchDragCleanup: (() => void) | null = null;
   private contentHeight = 0;
   private viewportHeight = 0;
   private viewportY = 0;
@@ -320,7 +323,7 @@ export class PaintedQuestLog {
       .text(
         panelX + PANEL_WIDTH - PANEL_PADDING,
         panelY + 8,
-        "[Q / Esc to close]",
+        isTouchUiActive() ? "[tap outside to close]" : "[Q / Esc to close]",
         {
           fontFamily: FONT,
           fontSize: "14px",
@@ -337,7 +340,9 @@ export class PaintedQuestLog {
       .text(
         panelX + PANEL_WIDTH - PANEL_PADDING,
         panelY + 25,
-        "[↑↓ select · Enter expand · click title · wheel to scroll]",
+        isTouchUiActive()
+          ? "[tap a title to expand · drag to scroll]"
+          : "[↑↓ select · Enter expand · click title · wheel to scroll]",
         {
           fontFamily: FONT,
           fontSize: "12px",
@@ -968,6 +973,38 @@ export class PaintedQuestLog {
       this.domWheelListener = domWheelListener;
     }
 
+    // Touch: drag the list to scroll (no wheel or arrow keys on a
+    // phone). Converts finger travel (CSS px) into the log's logical
+    // units via the canvas's on-screen size.
+    if (typeof window !== "undefined" && isTouchUiActive()) {
+      let lastY: number | null = null;
+      const toLogical = (): number => {
+        const h = this.scene.game.canvas?.getBoundingClientRect().height || 0;
+        return h > 0 ? this.canvasHeight / h : 1;
+      };
+      const down = (ev: PointerEvent) => {
+        if (ev.pointerType === "touch") lastY = ev.clientY;
+      };
+      const move = (ev: PointerEvent) => {
+        if (lastY === null || ev.pointerType !== "touch") return;
+        this.scrollBy((lastY - ev.clientY) * toLogical());
+        lastY = ev.clientY;
+      };
+      const up = () => {
+        lastY = null;
+      };
+      window.addEventListener("pointerdown", down, true);
+      window.addEventListener("pointermove", move, true);
+      window.addEventListener("pointerup", up, true);
+      window.addEventListener("pointercancel", up, true);
+      this.touchDragCleanup = () => {
+        window.removeEventListener("pointerdown", down, true);
+        window.removeEventListener("pointermove", move, true);
+        window.removeEventListener("pointerup", up, true);
+        window.removeEventListener("pointercancel", up, true);
+      };
+    }
+
     const keyListener = (ev: KeyboardEvent) => {
       if (ev.key === "Escape" || ev.key === "q" || ev.key === "Q") {
         ev.stopPropagation();
@@ -1018,6 +1055,8 @@ export class PaintedQuestLog {
   }
 
   private removeInputListeners(): void {
+    this.touchDragCleanup?.();
+    this.touchDragCleanup = null;
     if (this.wheelListener) {
       this.scene.input?.off?.("wheel", this.wheelListener);
       this.wheelListener = null;

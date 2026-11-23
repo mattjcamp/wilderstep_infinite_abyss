@@ -57,6 +57,10 @@ interface Props {
   /** Called once when the fight resolves — winner side + XP/gold the
    *  scene awarded to the party. PlayHost applies the consequences. */
   onResolved: (result: CombatResolved) => void;
+  /** Phone-sized touch screen: use CombatScene's compact "phone"
+   *  layout (bigger on screen, no header / portrait / inventory
+   *  panels). Captured at mount, like the other props. */
+  phoneLayout?: boolean;
 }
 
 export function PlayCombatHost({
@@ -67,6 +71,7 @@ export function PlayCombatHost({
   darkness,
   partyInfravisionActive,
   onResolved,
+  phoneLayout = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Latest onResolved — the Phaser scene captures the callback once at
@@ -110,7 +115,17 @@ export function PlayCombatHost({
       const Phaser = await import("phaser");
       if (cancelled || !containerRef.current) return;
       installHiDpiText(Phaser);
-      const { CombatScene } = await import("@/battle/scenes/CombatScene");
+      const { CombatScene, configureCombatLayout } = await import(
+        "@/battle/scenes/CombatScene"
+      );
+      // Choose the layout BEFORE the game exists — the scene reads it
+      // while drawing. Always set it (not just for phones) so a phone
+      // fight can't leak its layout into a later desktop-sized one.
+      const box = containerRef.current;
+      const frame = configureCombatLayout(
+        phoneLayout ? "phone" : "standard",
+        box.clientWidth / Math.max(1, box.clientHeight),
+      );
       const { setActiveModule } = await import("@/battle/world/Module");
       setActiveModule(moduleId);
       // Inheritance-aware cache seed. Without this, CombatScene's
@@ -132,8 +147,8 @@ export function PlayCombatHost({
       // matching what PlayHost does for the overworld.
       game = new Phaser.Game({
         type: Phaser.AUTO,
-        width: LOGICAL_WIDTH * RENDER_SCALE,
-        height: LOGICAL_HEIGHT * RENDER_SCALE,
+        width: frame.width * RENDER_SCALE,
+        height: frame.height * RENDER_SCALE,
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,

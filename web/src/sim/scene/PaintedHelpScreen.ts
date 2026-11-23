@@ -38,6 +38,7 @@
  */
 
 import { uiZoomOf } from "@/util/renderScale";
+import { isTouchUiActive } from "@/play/touchMode";
 import type Phaser from "phaser";
 
 /** Subset of the Soundtrack module the help screen actually reads /
@@ -103,6 +104,31 @@ const COMBAT_SHORTCUTS: ShortcutRow[] = [
   { key: "Space", description: "End turn" },
   { key: "Esc", description: "Cancel the current sub-mode" },
   { key: "1 - 9", description: "Pick an option from a list" },
+];
+
+// Touch versions — the on-screen controls in place of keys. Picked at
+// open() time, so a touch device (or ?touch=1) sees these instead.
+const TOUCH_MOVE: ShortcutRow[] = [
+  { key: "▲▼◀▶", description: "Move one tile — hold to keep walking" },
+  { key: "Tap map", description: "Walk to the tapped tile (or talk / open / shop there)" },
+  { key: "Wait", description: "Pass a turn in place" },
+  { key: "Map", description: "Hold to see the whole map" },
+];
+
+const TOUCH_SCREENS: ShortcutRow[] = [
+  { key: "Party", description: "Roster, gold, shared stash, party effects" },
+  { key: "Quests", description: "Active and completed quests" },
+  { key: "Log", description: "Adventure log — full message back-buffer" },
+  { key: "Journal", description: "The lore you have discovered" },
+  { key: "Hold", description: "Press and hold anything for its details" },
+];
+
+const TOUCH_COMBAT: ShortcutRow[] = [
+  { key: "Tap tile", description: "Walk there; tap an enemy at a line's end to attack" },
+  { key: "Tap icon", description: "First tap shows the action, second tap does it" },
+  { key: "Aim", description: "Tap a tile to aim; tap it again to fire / cast / throw" },
+  { key: "Cancel", description: "Stop aiming (button in the actions panel)" },
+  { key: "Log / ⓘ", description: "Tap the log or COMBATANTS for more detail" },
 ];
 
 const TIPS: string[] = [
@@ -253,7 +279,7 @@ export class PaintedHelpScreen {
       .text(
         panelX + PANEL_WIDTH - PANEL_PADDING,
         panelY + 12,
-        "[H / Esc to close]",
+        isTouchUiActive() ? "[tap outside to close]" : "[H / Esc to close]",
         {
           fontFamily: FONT,
           fontSize: "11px",
@@ -287,21 +313,21 @@ export class PaintedHelpScreen {
       sectionX,
       cursorY,
       "MOVEMENT",
-      MOVE_SHORTCUTS,
+      isTouchUiActive() ? TOUCH_MOVE : MOVE_SHORTCUTS,
     );
     cursorY = this.paintShortcutSection(
       root,
       sectionX,
       cursorY,
       "INSPECTOR SCREENS",
-      INSPECTOR_SHORTCUTS,
+      isTouchUiActive() ? TOUCH_SCREENS : INSPECTOR_SHORTCUTS,
     );
     cursorY = this.paintShortcutSection(
       root,
       sectionX,
       cursorY,
       "COMBAT",
-      COMBAT_SHORTCUTS,
+      isTouchUiActive() ? TOUCH_COMBAT : COMBAT_SHORTCUTS,
     );
     cursorY = this.paintTipsSection(root, sectionX, cursorY);
 

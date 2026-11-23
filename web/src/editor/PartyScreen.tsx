@@ -40,6 +40,7 @@
  * non-keyboard fallback while the Phaser equivalent is built.
  */
 
+import { isTouchUiActive } from "@/play/touchMode";
 import { StatusAvatarDots, StatusPills } from "./StatusPills";
 import { isPartyEffectActive } from "@/play/partyEffects";
 import {
@@ -1611,7 +1612,7 @@ export function PartyScreen({
             md+). Effects takes what it needs (scrolling if it would
             crowd the Inventory out); Inventory fills the rest. When
             one is collapsed the other gets the whole column. */}
-        <div className="flex flex-col gap-2 md:h-[60vh] md:min-h-[22rem]">
+        <div className="flex flex-col gap-2 md:h-[60vh] md:min-h-[22rem] [@media(max-height:520px)]:!h-auto [@media(max-height:520px)]:!min-h-0">
           {/* EFFECTS list */}
           <section
             className={[
@@ -1620,12 +1621,12 @@ export function PartyScreen({
                 ? "shrink-0"
                 : collapsed.stash
                   ? "flex-1"
-                  : "max-h-[50%] shrink",
+                  : "max-h-[50%] shrink [@media(max-height:520px)]:max-h-none",
             ].join(" ")}
           >
             {sectionHeader("effects", "Effects")}
             <ul
-              className="mt-1 min-h-0 space-y-0.5 overflow-y-auto pr-1"
+              className="mt-1 min-h-0 space-y-0.5 overflow-y-auto pr-1 [@media(max-height:520px)]:overflow-visible"
               hidden={collapsed.effects}
             >
               {effectRows.length === 0 ? (
@@ -1711,7 +1712,7 @@ export function PartyScreen({
             <ul
               hidden={collapsed.stash}
               ref={stashListRef}
-              className="mt-1 max-h-48 min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1 text-sm md:max-h-none"
+              className="mt-1 max-h-48 min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1 text-sm md:max-h-none [@media(max-height:520px)]:!max-h-none [@media(max-height:520px)]:overflow-visible"
               role="listbox"
               aria-label="Inventory"
             >
@@ -1799,7 +1800,7 @@ export function PartyScreen({
                       title={[
                         cat?.description,
                         wearer ? `Equipped by ${wearer.name}` : null,
-                        isGear && onEquipItem
+                        isGear && onEquipItem && !isTouchUiActive()
                           ? "Enter to equip / unequip"
                           : null,
                       ]
@@ -1843,6 +1844,33 @@ export function PartyScreen({
                       </span>
                     ) : null}
                     </div>
+                    {isSel &&
+                    !editor &&
+                    isTouchUiActive() &&
+                    !pickerOpen &&
+                    stashMode !== "send" ? (
+                      // Touch: there's no keyboard (Enter / U / S / X)
+                      // and no double-click, so the selected row gets
+                      // its actions as buttons.
+                      <div className="mt-1 flex flex-wrap gap-1.5 pl-6">
+                        {canEquipSelected ? (
+                          <TouchRowButton onClick={openPicker}>
+                            {wearer ? "Equip / unequip" : "Equip"}
+                          </TouchRowButton>
+                        ) : null}
+                        {canUseSelected ? (
+                          <TouchRowButton onClick={triggerUse}>Use</TouchRowButton>
+                        ) : null}
+                        {canSendSelected ? (
+                          <TouchRowButton onClick={() => setStashMode("send")}>
+                            Give to…
+                          </TouchRowButton>
+                        ) : null}
+                        <TouchRowButton onClick={toggleExamine}>
+                          {stashMode === "examine" ? "Hide details" : "Details"}
+                        </TouchRowButton>
+                      </div>
+                    ) : null}
                     {isSel && stashMode === "examine" ? (
                       <ItemDetails
                         item={cat ?? { id: row.item, name: label }}
@@ -2014,7 +2042,13 @@ export function PartyScreen({
       {/* Bottom hint bar. Reflects whichever mode is active so the
           player isn't hunting for which keys do what. */}
       <div className="border-t border-parchment/15 pt-1 text-center font-mono text-xs uppercase tracking-wider text-parchment/65">
-        {focusZone === "equip"
+        {!editor && isTouchUiActive()
+          ? stashMode === "send"
+            ? "Tap a party member to give them the item"
+            : focusZone === "equip"
+              ? "Tap who should wear it (the wearer = unequip)"
+              : "Tap an item for actions · hold anything for details"
+          : focusZone === "equip"
           ? `↑↓ pick · Enter equip (wearer = unequip) · 1-${members.length} pick · ESC cancel`
           : stashMode === "examine"
             ? "X / ESC hide details · ↑↓ select"
@@ -2029,6 +2063,25 @@ export function PartyScreen({
                 : "↑↓ select · Enter activate · ↓ inventory · → party · ESC close"}
       </div>
     </div>
+  );
+}
+
+/** Touch-only action button under a selected Inventory row. */
+function TouchRowButton({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="min-h-9 rounded border border-parchment/30 bg-ink/70 px-3 text-sm text-parchment active:bg-ember/40"
+    >
+      {children}
+    </button>
   );
 }
 

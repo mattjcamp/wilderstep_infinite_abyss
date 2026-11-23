@@ -132,7 +132,7 @@ export function ChestDialogOverlay({
       aria-modal="true"
       aria-label={`Treasure chest: ${chestName}`}
     >
-      <div className="w-[440px] rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl">
+      <div className="max-h-[90dvh] w-[440px] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl">
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="font-display text-xl">{chestName}</h2>
           <span className="font-mono text-xs text-parchment/65">

@@ -53,3 +53,25 @@ body {
   .log-sparkle { display: none; }
   .log-entry-new { animation-duration: 0.01s; }
 }
+
+/* Phones held sideways (short viewport): keep full-screen modal
+   backdrops clear of the notch / Dynamic Island and the home bar.
+   env() is 0 everywhere else, and desktop windows are never this
+   short in practice, so this only bites on phones. */
+@media (max-height: 520px) {
+  .fixed.inset-0 {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Phones held sideways: Help + Quest Log panels read better a size
+   up (their text is 11–12px). `zoom` scales the whole panel; the
+   max-height is divided back down so it still fits the screen. */
+@media (max-height: 520px) {
+  .phone-readable {
+    zoom: 1.25;
+    max-height: calc(90dvh / 1.25) !important;
+  }
+}

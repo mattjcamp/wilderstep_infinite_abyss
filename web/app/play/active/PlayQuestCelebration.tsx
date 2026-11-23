@@ -32,6 +32,7 @@
  * (e.g. on parent state change) without re-firing audio.
  */
 
+import { useTouchUi } from "./PlayTouchControls";
 import { useEffect, useRef, useState } from "react";
 
 /** All placard variants. Exported so the host's celebration-queue
@@ -156,7 +157,17 @@ export function PlayQuestCelebration({
   onDismiss,
   moveTick = 0,
 }: PlayQuestCelebrationProps) {
+  const touchUi = useTouchUi();
   const [phase, setPhase] = useState<"enter" | "hold" | "exit">("enter");
+  // Touch: the card itself is the dismiss button (moving to dismiss is
+  // clunky with a d-pad, and the card can sit over the party). Only
+  // once it has faded in, so a tap as it appears doesn't skip it.
+  const tapDismiss = touchUi
+    ? (e: { stopPropagation: () => void }) => {
+        e.stopPropagation();
+        if (phase === "hold") setPhase("exit");
+      }
+    : undefined;
   const t = TIMINGS[kind];
   const sticky = isStickyCelebration(kind);
   // Move count at mount + when the placard became dismissable, so
@@ -285,7 +296,10 @@ export function PlayQuestCelebration({
         className="pointer-events-none fixed inset-x-0 top-16 z-40 flex justify-center px-4"
       >
         <div
+          onClick={tapDismiss}
           style={{
+            pointerEvents: touchUi ? "auto" : undefined,
+            cursor: touchUi ? "pointer" : undefined,
             opacity,
             transform: `translateY(${translateY}px)`,
             transition: `opacity ${fadeDur}ms ease-out, transform ${fadeDur}ms ease-out`,
@@ -308,7 +322,7 @@ export function PlayQuestCelebration({
             className="mt-4 text-xs uppercase tracking-[0.18em] text-parchment/50"
             style={{ opacity: armed ? 1 : 0, transition: "opacity 300ms" }}
           >
-            Move or press any key to continue
+            {touchUi ? "Tap to continue" : "Move or press any key to continue"}
           </div>
         </div>
       </div>
@@ -325,7 +339,10 @@ export function PlayQuestCelebration({
         className="pointer-events-none fixed inset-x-0 top-16 z-40 flex justify-center px-4"
       >
         <div
+          onClick={tapDismiss}
           style={{
+            pointerEvents: touchUi ? "auto" : undefined,
+            cursor: touchUi ? "pointer" : undefined,
             opacity,
             transform: `translateY(${translateY}px)`,
             transition: `opacity ${fadeDur}ms ease-out, transform ${fadeDur}ms ease-out`,
@@ -349,7 +366,7 @@ export function PlayQuestCelebration({
             className="mt-4 text-xs uppercase tracking-[0.18em] text-parchment/50"
             style={{ opacity: armed ? 1 : 0, transition: "opacity 300ms" }}
           >
-            Move to continue
+            {touchUi ? "Tap to continue" : "Move to continue"}
           </div>
         </div>
       </div>
@@ -362,7 +379,10 @@ export function PlayQuestCelebration({
       className="pointer-events-none fixed inset-x-0 top-10 z-40 flex justify-center px-4"
     >
       <div
+        onClick={tapDismiss}
         style={{
+          pointerEvents: touchUi ? "auto" : undefined,
+          cursor: touchUi ? "pointer" : undefined,
           opacity,
           transform: `translateY(${translateY}px)`,
           transition: `opacity ${fadeDur}ms ease-out, transform ${fadeDur}ms ease-out`,

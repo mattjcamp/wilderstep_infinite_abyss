@@ -100,7 +100,7 @@ export function PlayPitFallOverlay({
         role="dialog"
         aria-modal="true"
         aria-labelledby="pitfall-title"
-        className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-lg border border-amber-700/50 bg-ink/95 shadow-2xl shadow-black/60"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-lg border border-amber-700/50 bg-ink/95 shadow-2xl shadow-black/60"
       >
         <header className="flex flex-col items-center px-5 pt-5">
           <FallingIcon />

@@ -20,6 +20,7 @@
  */
 
 import { randomReachableCell } from "./randomTeleport";
+import { planTapWalk, type TapCellKind } from "./tapWalk";
 import {
   cellAt,
   deltaFor,
@@ -1243,6 +1244,40 @@ export class MapSimulation {
    *       (mountain in the sea, second boat in the way, …)
    *    8. Normal walking — falls through to step()
    */
+  /**
+   * Touch tap-to-walk: the steps from the party to (col, row), or null
+   * when there's no sensible route. Walks only plain ground; tapping an
+   * NPC / counter / sign / board / quest giver / chest / locked door /
+   * lair / link / boat routes next to it and ends with the bump into
+   * it. Not used while the party is aboard a boat (the d-pad sails).
+   * The host feeds the steps to `stepInDirection` one at a time.
+   */
+  planWalkTo(col: number, row: number): Direction[] | null {
+    if (this.disposed || this.onBoat) return null;
+    return planTapWalk(this.pos, { col, row }, (c, r) => this.tapCellKind(c, r));
+  }
+
+  private tapCellKind(c: number, r: number): TapCellKind {
+    const cell = cellAt(this.grid, c, r);
+    if (!cell) return "blocked";
+    const key = `${c},${r}`;
+    if (cell.npc || cell.counter || cell.lore || cell.board) return "interact";
+    const quest = (cell as { quest?: string }).quest;
+    if (quest && this.questCatalog.has(quest)) return "interact";
+    if (this.isCellLocked(c, r)) return "interact";
+    if (cell.spawn && this.spawnCatalog.has(cell.spawn) && !this.destroyedLairs.has(key)) {
+      return "interact";
+    }
+    if (cell.item && this.chestItemIds.has(cell.item)) return "interact";
+    if (this.boatPositions.has(key)) return "interact";
+    // Links / dungeon entrances: only ever the destination, never a
+    // tile the route passes over (it would whisk the party away).
+    if (cell.dungeon || cell.link?.map_id) return "interact";
+    if (cell.pit) return "blocked";
+    if (!(cell.walkable || this.unlockedCells.has(key))) return "blocked";
+    return "open";
+  }
+
   stepInDirection(direction: Direction): void {
     if (this.disposed) return;
     const { dc, dr } = deltaFor(direction);

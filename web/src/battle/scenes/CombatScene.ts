@@ -28,6 +28,7 @@
  * buttons we already had (End Turn, Flee, Attack via bump).
  */
 
+import { isTouchUiActive } from "@/play/touchMode";
 import Phaser from "phaser";
 import { Combat, isAiControlled, type ConsumeEvent } from "../combat/Combat";
 import { isConsumed, consumedEffect } from "../combat/effects/consumedEffect";
@@ -303,55 +304,71 @@ const COMBAT_STEP_MS = 110;
 /** Depth at and above which objects are dialogs / banners drawn over
  *  the arena at the frame's normal size (not zoomed with the arena). */
 const OVERLAY_DEPTH = 120;
-const HEADER_H = 32;
+// ── Battle-screen layout ────────────────────────────────────────────
+// Two layouts share every drawing routine; only these numbers differ.
+//
+//   "standard" — the 1280×720 frame desktops and tablets get (header,
+//                arena + right HUD, bottom strip of portrait / actions
+//                / inventory). Values are exactly the historical ones.
+//   "phone"    — a smaller, wider frame (FRAME_H 460, width from the
+//                screen's shape) so the whole battle draws ~1.6× larger
+//                on a phone held sideways. No header; the actions sit
+//                under the HUD in the right column; the portrait and
+//                inventory panels are parked off-canvas (their objects
+//                still exist, so no code paths change — items stay
+//                reachable via Use / Equip). Arena tiles show a bit
+//                smaller (ARENA_TILE_STEP) so more battlefield fits.
+//
+// `configureCombatLayout` must run BEFORE the Phaser game is created
+// (PlayCombatHost does). Nothing else needs to call it: the module
+// starts in "standard", so the editor's battle sims are unaffected.
+export type CombatLayoutMode = "standard" | "phone";
+let FRAME_W = LOGICAL_WIDTH;
+let FRAME_H = LOGICAL_HEIGHT;
+let HEADER_H = 32;
 // Frame grid — every panel below the header sits on the same grid so
-// their edges line up: a 12px margin to the screen edge, an 8px
-// gutter between panels. The arena, party HUD and log frames share
-// left / right / top / bottom edges exactly; the arena's camera view
-// sits ARENA_PAD inside its frame so the border never covers tiles.
-const MARGIN = 12;
-const GUTTER = 8;
+// their edges line up: a margin to the screen edge, a gutter between
+// panels. The arena's camera view sits ARENA_PAD inside its frame so
+// the border never covers tiles.
+let MARGIN = 12;
+let GUTTER = 8;
 const ARENA_PAD = 4;
-const FRAME_TOP = HEADER_H + GUTTER;      // 40
-const ARENA_FRAME_X = MARGIN;             // 12
-const ARENA_X = ARENA_FRAME_X + ARENA_PAD; // 16
-const ARENA_Y = FRAME_TOP + ARENA_PAD;    // 44
+let FRAME_TOP = 0;
+let ARENA_FRAME_X = 0;
+let ARENA_X = 0;
+let ARENA_Y = 0;
 // ARENA_W/H: the battlefield itself (18 × 16 tiles) in world units.
 // VIEW_W/H: the on-screen window the arena camera draws it into; the
 // camera zooms tiles to native size and scrolls within the battlefield.
 const ARENA_W = ARENA_COLS * TILE;        // 18 × 32 = 576
 const ARENA_H = ARENA_ROWS * TILE;        // 16 × 32 = 512
-const HUD_W = 348;
-const ARENA_FRAME_W =
-  LOGICAL_WIDTH - MARGIN - GUTTER - HUD_W - MARGIN;          // 900
-const VIEW_W = ARENA_FRAME_W - ARENA_PAD * 2;                // 892
-const VIEW_H = ARENA_H;                                      // 512
-const ARENA_FRAME_H = VIEW_H + ARENA_PAD * 2;                // 520
-const HUD_X = ARENA_FRAME_X + ARENA_FRAME_W + GUTTER;        // 920
-const HUD_Y = FRAME_TOP;                                     // 40
-const HUD_H = ARENA_FRAME_H;                                 // 520
-// Bottom strip — three panels on the same frame grid, split 10 / 70 /
-// 20 of the usable width: the active combatant's portrait, the
-// action menu, and the active member's inventory. The battle log
-// lives in the right-hand HUD under the party cards.
-const BOTTOM_Y = FRAME_TOP + ARENA_FRAME_H + GUTTER;         // 568
-const BOTTOM_H = LOGICAL_HEIGHT - BOTTOM_Y - MARGIN;         // 140
-const BOTTOM_INNER_W = LOGICAL_WIDTH - MARGIN * 2 - GUTTER * 2; // 1240
-const PORTRAIT_X = MARGIN;                                   // 12
-const PORTRAIT_W = Math.round(BOTTOM_INNER_W * 0.1);         // 124
-const ACTIONS_X = PORTRAIT_X + PORTRAIT_W + GUTTER;          // 144
-const INVENTORY_W = Math.round(BOTTOM_INNER_W * 0.2);        // 248
-const ACTIONS_W = BOTTOM_INNER_W - PORTRAIT_W - INVENTORY_W; // 868
-const INVENTORY_X = ACTIONS_X + ACTIONS_W + GUTTER;          // 1020
+let HUD_W = 348;
+let ARENA_FRAME_W = 0;
+let VIEW_W = 0;
+let VIEW_H = 0;
+let ARENA_FRAME_H = 0;
+let HUD_X = 0;
+let HUD_Y = 0;
+let HUD_H = 0;
+// Bottom strip (standard) — portrait | actions | inventory, split
+// 10 / 70 / 20 of the usable width.
+let BOTTOM_Y = 0;
+let BOTTOM_H = 0;
+let PORTRAIT_X = 0;
+let PORTRAIT_W = 0;
+let ACTIONS_X = 0;
+let ACTIONS_Y = 0;
+let ACTIONS_W = 0;
+let ACTIONS_H = 0;
+let INVENTORY_X = 0;
+let INVENTORY_W = 0;
 /** Inventory icon grid: cell size / pitch (item art is 32px, drawn
  *  1:1 at 32 logical px), columns that fit the panel, and rows that
  *  fit under the heading. */
 const INV_CELL = 32;
 const INV_PITCH = 36;
-const INV_COLS = Math.floor((INVENTORY_W - 20 + (INV_PITCH - INV_CELL)) / INV_PITCH); // 6
+let INV_COLS = 0;
 const INV_ROWS = 2;
-const ACTIONS_Y = BOTTOM_Y;
-const ACTIONS_H = BOTTOM_H;
 /** Action icon matrix: columns, cell pitch, cell + icon size. Eight
  *  slots (4 × 2) — one per possible action; only available actions
  *  are drawn, packed from the top-left. */
@@ -364,16 +381,103 @@ const ACTION_ICON = 48;
  *  panel as an icon matrix, same cell size as the action icons:
  *  SUBMENU_COLS × SUBMENU_ROWS cells on screen, scrolling a row at a
  *  time to keep the cursor in view. The last entry is always Back. */
-// As many columns as the (wide) Action panel holds, capped at 16.
-const SUBMENU_COLS = Math.min(16, Math.floor((ACTIONS_W - 48) / 54));
+let SUBMENU_COLS = 0;
 const SUBMENU_ROWS = 2;
-const SUBMENU_VISIBLE = SUBMENU_COLS * SUBMENU_ROWS;
+let SUBMENU_VISIBLE = 0;
+/** Right-HUD combatant list: cards visible at once. */
+let ROSTER_ROWS = 4;
+/** Arena tile size as a multiple of NATIVE_TILE_CSS_PX. */
+let ARENA_TILE_STEP = 1;
+
+/** Height (logical units) of the phone battle frame. */
+const PHONE_FRAME_H = 460;
+
+/**
+ * Pick the battle layout. `aspect` (width / height of the box the
+ * canvas will fill) sizes the phone frame's width; ignored for
+ * "standard". Returns the logical frame size the Phaser game must use.
+ */
+export function configureCombatLayout(
+  mode: CombatLayoutMode,
+  aspect = 16 / 9,
+): { width: number; height: number } {
+  if (mode === "phone") {
+    FRAME_H = PHONE_FRAME_H;
+    FRAME_W = Math.round(
+      Math.min(1060, Math.max(740, PHONE_FRAME_H * (aspect > 0 ? aspect : 16 / 9))),
+    );
+    HEADER_H = 0;
+    MARGIN = 8;
+    GUTTER = 6;
+    FRAME_TOP = MARGIN;
+    HUD_W = 260;
+    ROSTER_ROWS = 3;
+    ARENA_TILE_STEP = 0.75;
+    const colH = FRAME_H - FRAME_TOP - MARGIN;
+    // Right column: HUD (roster + log) over the actions panel.
+    HUD_X = FRAME_W - MARGIN - HUD_W;
+    HUD_Y = FRAME_TOP;
+    ACTIONS_W = HUD_W;
+    ACTIONS_H = 2 * ACTION_PITCH - (ACTION_PITCH - ACTION_CELL) + 10 + 30;
+    HUD_H = colH - GUTTER - ACTIONS_H;
+    ACTIONS_X = HUD_X;
+    ACTIONS_Y = HUD_Y + HUD_H + GUTTER;
+    // Arena fills the rest, full height.
+    ARENA_FRAME_X = MARGIN;
+    ARENA_FRAME_W = HUD_X - GUTTER - MARGIN;
+    ARENA_FRAME_H = colH;
+    // Portrait + inventory: parked off-canvas (see the block comment).
+    BOTTOM_Y = FRAME_H + 200;
+    BOTTOM_H = 140;
+    PORTRAIT_X = 0;
+    PORTRAIT_W = 124;
+    INVENTORY_X = PORTRAIT_W + 8;
+    INVENTORY_W = 248;
+  } else {
+    FRAME_W = LOGICAL_WIDTH;
+    FRAME_H = LOGICAL_HEIGHT;
+    HEADER_H = 32;
+    MARGIN = 12;
+    GUTTER = 8;
+    FRAME_TOP = HEADER_H + GUTTER;                               // 40
+    HUD_W = 348;
+    ROSTER_ROWS = 4;
+    ARENA_TILE_STEP = 1;
+    ARENA_FRAME_X = MARGIN;                                      // 12
+    ARENA_FRAME_W = FRAME_W - MARGIN - GUTTER - HUD_W - MARGIN;  // 900
+    ARENA_FRAME_H = ARENA_H + ARENA_PAD * 2;                     // 520
+    HUD_X = ARENA_FRAME_X + ARENA_FRAME_W + GUTTER;              // 920
+    HUD_Y = FRAME_TOP;                                           // 40
+    HUD_H = ARENA_FRAME_H;                                       // 520
+    BOTTOM_Y = FRAME_TOP + ARENA_FRAME_H + GUTTER;               // 568
+    BOTTOM_H = FRAME_H - BOTTOM_Y - MARGIN;                      // 140
+    const bottomInnerW = FRAME_W - MARGIN * 2 - GUTTER * 2;      // 1240
+    PORTRAIT_X = MARGIN;                                         // 12
+    PORTRAIT_W = Math.round(bottomInnerW * 0.1);                 // 124
+    ACTIONS_X = PORTRAIT_X + PORTRAIT_W + GUTTER;                // 144
+    INVENTORY_W = Math.round(bottomInnerW * 0.2);                // 248
+    ACTIONS_W = bottomInnerW - PORTRAIT_W - INVENTORY_W;         // 868
+    INVENTORY_X = ACTIONS_X + ACTIONS_W + GUTTER;                // 1020
+    ACTIONS_Y = BOTTOM_Y;
+    ACTIONS_H = BOTTOM_H;
+  }
+  ARENA_X = ARENA_FRAME_X + ARENA_PAD;
+  ARENA_Y = FRAME_TOP + ARENA_PAD;
+  VIEW_W = ARENA_FRAME_W - ARENA_PAD * 2;
+  VIEW_H = ARENA_FRAME_H - ARENA_PAD * 2;
+  INV_COLS = Math.floor((INVENTORY_W - 20 + (INV_PITCH - INV_CELL)) / INV_PITCH); // 6
+  // As many sub-menu columns as the Action panel holds, capped at 16.
+  SUBMENU_COLS = Math.min(16, Math.floor((ACTIONS_W - 48) / 54));
+  SUBMENU_VISIBLE = SUBMENU_COLS * SUBMENU_ROWS;
+  return { width: FRAME_W, height: FRAME_H };
+}
+configureCombatLayout("standard");
+
 /** Back entry icon — module sprite actions/back.png. */
 const BACK_ICON_URL = (): string => spriteUrl("actions/back.png");
 /** Portrait size inside the 10% panel (square, leaves room for the name). */
 const PORTRAIT_SIZE = 84;
 /** Right-HUD combatant list: cards visible at once, and card height. */
-const ROSTER_ROWS = 4;
 const ROSTER_CARD_H = 60;
 /** Active-combatant highlight animation: halo layers around the ring /
  *  portrait frame and the pulse period. */
@@ -950,6 +1054,25 @@ export class CombatScene extends Phaser.Scene {
    *  Input handlers consult this so arrows scroll the list and other
    *  keys are inert until it's dismissed. */
   private inspectorOpen = false;
+  /** Touch: big Cancel button shown in the Actions panel while aiming
+   *  (target / tile / direction pickers), in place of the action icons
+   *  — those can't be used mid-aim anyway. Synced in update(). */
+  private touchCancelObjs: Phaser.GameObjects.GameObject[] = [];
+  private touchAimingShown = false;
+  /** Touch: full battle-log panel opened by tapping the HUD log. */
+  private fullLogObjs: Phaser.GameObjects.GameObject[] = [];
+  /** Touch: arena scroll the player dragged to. While set, update()
+   *  stops following the action; cleared when the player acts or the
+   *  turn passes (see clearTouchPan). */
+  private touchPan: { x: number; y: number } | null = null;
+  /** Touch: a finger that went down on an arena tile — becomes a tap
+   *  on release, or a pan once it drags past the slop. */
+  private touchTap: {
+    col: number; row: number; x: number; y: number;
+    scrollX: number; scrollY: number; dragging: boolean;
+  } | null = null;
+  /** Touch: the zoom-out toggle's label (text flips with the state). */
+  private touchZoomLabel: Phaser.GameObjects.Text | null = null;
   /** Every GameObject the open inspector created — destroyed on close. */
   private inspectorObjs: Phaser.GameObjects.GameObject[] = [];
   /** The scrolling content container (masked to the viewport). */
@@ -1519,9 +1642,11 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private drawHeader(): void {
-    this.panel(0, 0, LOGICAL_WIDTH, HEADER_H);
+    // Phone layout has no header bar.
+    if (HEADER_H <= 0) return;
+    this.panel(0, 0, FRAME_W, HEADER_H);
     this.track(
-      this.add.text(LOGICAL_WIDTH / 2, 6, "BATTLE", FONT_TITLE()).setOrigin(0.5, 0),
+      this.add.text(FRAME_W / 2, 6, "BATTLE", FONT_TITLE()).setOrigin(0.5, 0),
     );
   }
 
@@ -1629,7 +1754,19 @@ export class CombatScene extends Phaser.Scene {
           .rectangle(x, y, TILE, TILE, 0xffffff, 0)
           .setOrigin(0)
           .setInteractive({ useHandCursor: false });
-        hit.on("pointerdown", () => this.onTileClicked(col, row));
+        hit.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+          if (pointer?.wasTouch || isTouchUiActive()) {
+            // Touch: act on release, unless the finger drags (= pan).
+            const cam = this.arenaCam;
+            this.touchTap = {
+              col, row, x: pointer.x, y: pointer.y,
+              scrollX: cam?.scrollX ?? 0, scrollY: cam?.scrollY ?? 0,
+              dragging: false,
+            };
+            return;
+          }
+          this.onTileClicked(col, row, false);
+        });
       }
     }
 
@@ -2188,7 +2325,13 @@ export class CombatScene extends Phaser.Scene {
     // (and summons) first, then the enemies. ROSTER_ROWS cards show at
     // once; the wheel or the ▲ ▼ buttons scroll, and the list follows
     // whoever is acting (see refreshRoster).
-    this.track(this.add.text(HUD_X + 14, cy, "COMBATANTS", FONT_HEAD()));
+    const rosterHead = this.track(this.add.text(HUD_X + 14, cy, "COMBATANTS", FONT_HEAD()));
+    if (isTouchUiActive()) {
+      // Touch: the inspector (gear + effects for everyone) is P on a
+      // keyboard — tap the heading instead.
+      rosterHead.setText("COMBATANTS ⓘ").setInteractive({ useHandCursor: true });
+      rosterHead.on("pointerdown", () => this.toggleInspector());
+    }
     const arrowStyle = { fontFamily: "monospace", fontSize: "14px", color: hex(C.dim) };
     const up = this.track(
       this.add.text(HUD_X + HUD_W - 52, cy, "▲", arrowStyle).setInteractive({ useHandCursor: true }),
@@ -2338,13 +2481,22 @@ export class CombatScene extends Phaser.Scene {
       // We look up the live action via the scene field so a refresh
       // that just shifted rows (e.g. running out of MP hid Cast) still
       // routes the click correctly.
-      handle.on("pointerdown", () => {
+      handle.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
         const action = this.visibleActions[i];
         if (!action) return; // blank slot — nothing rendered, ignore.
         // Translate back to the action's index in PARTY_ACTIONS so the
         // arrow-key navigation (which still operates on the canonical
         // list) stays consistent with what was just clicked.
         const cursorIdx = PARTY_ACTIONS.findIndex((a) => a.id === action.id);
+        // Touch: there is no hover to preview an icon's name, so a tap
+        // on a cell that isn't highlighted just highlights it (the
+        // readout shows its name + hint); tapping the highlighted cell
+        // activates it. Mouse clicks keep the one-click behaviour.
+        if ((pointer?.wasTouch || isTouchUiActive()) && cursorIdx >= 0 && cursorIdx !== this.actionCursor) {
+          this.actionCursor = cursorIdx;
+          this.refreshActionMenu();
+          return;
+        }
         if (cursorIdx >= 0) this.actionCursor = cursorIdx;
         try {
           this.activateAction();
@@ -2366,6 +2518,174 @@ export class CombatScene extends Phaser.Scene {
       this.actionRowHandles.push(handle);
       this.actionIcons.push(icon);
     }
+
+    // Touch: Cancel button for the aiming modes (see touchCancelObjs).
+    if (isTouchUiActive()) {
+      const cw = Math.min(ACTIONS_W - 24, 220);
+      const ch = ACTION_CELL;
+      const cx = ACTIONS_X + Math.round((ACTIONS_W - cw) / 2);
+      const cy = ACTIONS_Y + 10 + Math.round((gridH - ch) / 2);
+      const btn = this.track(
+        this.add
+          .rectangle(cx, cy, cw, ch, 0x2a1f24, 1)
+          .setOrigin(0)
+          .setStrokeStyle(2, C.accent)
+          .setVisible(false),
+      );
+      btn.on("pointerdown", () => this.cancelSubMode());
+      const label = this.track(
+        this.add
+          .text(cx + cw / 2, cy + ch / 2, "✕  Cancel", FONT_TITLE(C.body))
+          .setOrigin(0.5)
+          .setVisible(false),
+      );
+      this.touchCancelObjs = [btn, label];
+      this.installTouchArenaControls();
+    }
+  }
+
+  /** Touch + a target / tile / direction picker is up. (List pickers
+   *  set `subMenuOpen` and carry their own Back cell.) */
+  private isTouchAiming(): boolean {
+    return isTouchUiActive() && this.mode !== "default" && !this.subMenuOpen;
+  }
+
+  /** Show / hide the touch Cancel button and the action icons when the
+   *  aiming state flips. Called every frame from update(). */
+  private syncTouchCancel(): void {
+    if (this.touchCancelObjs.length === 0) return;
+    const aiming = this.isTouchAiming() && !this.ended;
+    if (aiming === this.touchAimingShown) return;
+    this.touchAimingShown = aiming;
+    const [btn] = this.touchCancelObjs;
+    for (const o of this.touchCancelObjs) {
+      (o as unknown as Phaser.GameObjects.Components.Visible).setVisible(aiming);
+    }
+    const r = btn as Phaser.GameObjects.Rectangle;
+    if (aiming) r.setInteractive({ useHandCursor: true });
+    else r.disableInteractive();
+    this.refreshActionMenu();
+  }
+
+  /** Touch: drop a manual pan so the camera follows the action again. */
+  private clearTouchPan(): void {
+    this.touchPan = null;
+  }
+
+  /** Touch: drag-to-pan + tap-on-release for arena tiles, and the
+   *  zoom-out toggle. Installed once from drawHud on touch devices. */
+  private installTouchArenaControls(): void {
+    this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
+      const t = this.touchTap;
+      const cam = this.arenaCam;
+      if (!t || !cam || !p.isDown) return;
+      const dx = p.x - t.x;
+      const dy = p.y - t.y;
+      if (!t.dragging && Math.hypot(dx, dy) < 10 * RENDER_SCALE) return;
+      t.dragging = true;
+      const viewW = cam.width / cam.zoom;
+      const viewH = cam.height / cam.zoom;
+      const clamp = (v: number, lo: number, span: number, view: number) =>
+        view >= span ? lo - (view - span) / 2 : Math.min(Math.max(v, lo), lo + span - view);
+      const x = clamp(t.scrollX - dx / cam.zoom, ARENA_X, ARENA_W, viewW);
+      const y = clamp(t.scrollY - dy / cam.zoom, ARENA_Y, ARENA_H, viewH);
+      this.touchPan = { x, y };
+      cam.setScroll(x, y);
+    });
+    const release = () => {
+      const t = this.touchTap;
+      this.touchTap = null;
+      if (t && !t.dragging) this.onTileClicked(t.col, t.row, true);
+    };
+    this.input.on("pointerup", release);
+    this.input.on("pointerupoutside", release);
+
+    // Zoom-out toggle — top-right corner of the arena, on the overlay
+    // layer (depth ≥ OVERLAY_DEPTH) so it sits above the battlefield.
+    const W = 74;
+    const H = 30;
+    const bx = ARENA_X + VIEW_W - W - 6;
+    const by = ARENA_Y + 6;
+    const btn = this.track(
+      this.add
+        .rectangle(bx, by, W, H, 0x161629, 0.85)
+        .setOrigin(0)
+        .setStrokeStyle(1, C.gold)
+        .setDepth(OVERLAY_DEPTH + 1)
+        .setInteractive({ useHandCursor: true }),
+    );
+    this.touchZoomLabel = this.track(
+      this.add
+        .text(bx + W / 2, by + H / 2, "Zoom out", FONT_MONO(C.gold))
+        .setOrigin(0.5)
+        .setDepth(OVERLAY_DEPTH + 2),
+    );
+    btn.on("pointerdown", () => {
+      this.clearTouchPan();
+      this.setArenaOverview(!this.arenaOverview);
+      this.touchZoomLabel?.setText(this.arenaOverview ? "Zoom in" : "Zoom out");
+    });
+  }
+
+  /** Touch: the full battle log over the arena (newest first). Tap
+   *  anywhere on it to close. */
+  private openFullLog(): void {
+    this.closeFullLog();
+    const objs: Phaser.GameObjects.GameObject[] = [];
+    const dim = this.add
+      .rectangle(ARENA_X, ARENA_Y, VIEW_W, VIEW_H, 0x05050c, 0.8)
+      .setOrigin(0)
+      .setDepth(198)
+      .setInteractive();
+    dim.on("pointerdown", () => this.closeFullLog());
+    objs.push(dim);
+    const PX = ARENA_X + 10;
+    const PY = ARENA_Y + 10;
+    const PW = VIEW_W - 20;
+    const PH = VIEW_H - 20;
+    objs.push(
+      this.add
+        .rectangle(PX, PY, PW, PH, 0x161629, 0.98)
+        .setOrigin(0)
+        .setDepth(199)
+        .setStrokeStyle(2, C.gold),
+    );
+    objs.push(
+      this.add
+        .text(PX + PW / 2, PY + 8, "BATTLE LOG", FONT_TITLE())
+        .setOrigin(0.5, 0)
+        .setDepth(201),
+    );
+    objs.push(
+      this.add
+        .text(PX + PW / 2, PY + PH - 20, "Tap to close", FONT_MONO(C.faint))
+        .setOrigin(0.5, 0)
+        .setDepth(201),
+    );
+    const text = this.add
+      .text(PX + 14, PY + 40, "", {
+        fontFamily: "monospace",
+        fontSize: "14px",
+        color: hex(C.body),
+        lineSpacing: 3,
+        wordWrap: { width: PW - 28, useAdvancedWrap: true },
+      })
+      .setDepth(201);
+    objs.push(text);
+    // Newest first; drop the oldest lines until the block fits.
+    let lines = [...this.combat.log].reverse().slice(0, 80);
+    const maxH = PH - 40 - 28;
+    text.setText(lines.join("\n"));
+    while (lines.length > 1 && text.height > maxH) {
+      lines = lines.slice(0, Math.max(1, Math.floor(lines.length * 0.85)));
+      text.setText(lines.join("\n"));
+    }
+    this.fullLogObjs = objs;
+  }
+
+  private closeFullLog(): void {
+    for (const o of this.fullLogObjs) o.destroy();
+    this.fullLogObjs = [];
   }
 
   private drawCombatantCard(
@@ -2537,6 +2857,21 @@ export class CombatScene extends Phaser.Scene {
     // measured the space left over into `logArea`.
     const a = this.logArea;
     this.track(this.add.text(a.x, a.y, "LOG", FONT_HEAD()));
+    if (isTouchUiActive()) {
+      // Touch: the HUD log only fits a few lines — tap it for the lot.
+      this.track(
+        this.add
+          .text(a.x + a.w, a.y + 3, "tap to expand", FONT_MONO(C.faint))
+          .setOrigin(1, 0),
+      );
+      const hit = this.track(
+        this.add
+          .rectangle(a.x, a.y, a.w, Math.max(24, a.h), 0xffffff, 0)
+          .setOrigin(0)
+          .setInteractive({ useHandCursor: true }),
+      );
+      hit.on("pointerdown", () => this.openFullLog());
+    }
     // Newest entry sits on top in gold; refreshLog positions the
     // divider and history text beneath it once its height is known.
     this.logLatestText = this.track(
@@ -3039,6 +3374,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private activateAction(): void {
+    this.clearTouchPan();
     if (this.inspectorOpen) return;
     if (!this.canTakePlayerInput()) return;
     // "◂ Back" — the row after the last option in any list sub-menu.
@@ -3277,9 +3613,13 @@ export class CombatScene extends Phaser.Scene {
     const lines = [
       `Firing: ${ammoName}`,
       `Bow: ${weapon.name} (range ${range})`,
-      "[↑↓←→] move reticle",
-      "[Enter] fire (attacks creature on tile)",
-      "[ESC]   cancel",
+      ...(isTouchUiActive()
+        ? ["Tap a tile to aim", "Tap it again to fire", "Back to cancel"]
+        : [
+            "[↑↓←→] move reticle",
+            "[Enter] fire (attacks creature on tile)",
+            "[ESC]   cancel",
+          ]),
     ];
     const w = HUD_W - 12, h = lines.length * 18 + 28;
     const x = HUD_X + 6, y = HUD_Y + HUD_H - 6 - h;
@@ -4623,6 +4963,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private async resolveTarget(target: Combatant): Promise<void> {
+    this.clearTouchPan();
     const action = this.pendingAction;
     if (!action) return;
     const me = this.combat.current;
@@ -5051,24 +5392,64 @@ export class CombatScene extends Phaser.Scene {
 
     const cols = Math.min(SUBMENU_COLS, visibleCount);
     const gridW = cols * ACTION_PITCH - (ACTION_PITCH - ACTION_CELL);
-    const menuX = ACTIONS_X + Math.round((ACTIONS_W - gridW) / 2);
+    // Touch: the scroll arrows are real buttons (a finger can't hit the
+    // little ▲▼ glyphs), so reserve a column for them on the right.
+    const touchScroll = isTouchUiActive() && total > SUBMENU_VISIBLE;
+    const SCROLL_BTN_W = 40;
+    const reserve = touchScroll ? SCROLL_BTN_W + 8 : 0;
+    const menuX = ACTIONS_X + Math.round((ACTIONS_W - reserve - gridW) / 2);
     const menuY = ACTIONS_Y + 10;
 
-    // Scroll indicators — more cells above / below the window.
-    if (topRow > 0) {
-      this.pickerObjects.push(
-        this.add.text(ACTIONS_X + ACTIONS_W - 22, menuY, "▲", FONT_MONO(C.gold)),
+    const canUp = topRow > 0;
+    const canDown = topRow + visibleCount < total;
+    if (touchScroll) {
+      // Each tap pages the window by moving the cursor (keeping its
+      // column) to the far row of the next / previous page; the
+      // picker keeps the cursor on the window's bottom row, so up and
+      // down both move a full page.
+      const col = Math.max(0, cursor) % SUBMENU_COLS;
+      const scrollTo = (target: number) => {
+        const t = Math.max(0, Math.min(total - 1, target));
+        this.movePickerCursor(t - this.pickerCursor, false);
+      };
+      const bx = ACTIONS_X + ACTIONS_W - SCROLL_BTN_W - 6;
+      const mk = (y: number, glyph: string, enabled: boolean, onTap: () => void) => {
+        const btn = this.add
+          .rectangle(bx, y, SCROLL_BTN_W, ACTION_CELL, 0x1c1c2a, 1)
+          .setOrigin(0)
+          .setStrokeStyle(1, enabled ? C.gold : C.panelEdge);
+        this.pickerObjects.push(btn);
+        this.pickerObjects.push(
+          this.add
+            .text(bx + SCROLL_BTN_W / 2, y + ACTION_CELL / 2, glyph, FONT_TITLE(enabled ? C.gold : C.faint))
+            .setOrigin(0.5),
+        );
+        if (enabled) {
+          btn.setInteractive({ useHandCursor: true });
+          btn.on("pointerdown", onTap);
+        }
+      };
+      mk(menuY, "▲", canUp, () => scrollTo(topRow - SUBMENU_COLS + col));
+      mk(menuY + ACTION_PITCH, "▼", canDown, () =>
+        scrollTo(topRow + SUBMENU_VISIBLE + (SUBMENU_ROWS - 1) * SUBMENU_COLS + col),
       );
-    }
-    if (topRow + visibleCount < total) {
-      this.pickerObjects.push(
-        this.add.text(
-          ACTIONS_X + ACTIONS_W - 22,
-          menuY + SUBMENU_ROWS * ACTION_PITCH - 22,
-          "▼",
-          FONT_MONO(C.gold),
-        ),
-      );
+    } else {
+      // Scroll indicators — more cells above / below the window.
+      if (canUp) {
+        this.pickerObjects.push(
+          this.add.text(ACTIONS_X + ACTIONS_W - 22, menuY, "▲", FONT_MONO(C.gold)),
+        );
+      }
+      if (canDown) {
+        this.pickerObjects.push(
+          this.add.text(
+            ACTIONS_X + ACTIONS_W - 22,
+            menuY + SUBMENU_ROWS * ACTION_PITCH - 22,
+            "▼",
+            FONT_MONO(C.gold),
+          ),
+        );
+      }
     }
 
     const labelFor = (row: number) => labels[row] ?? "";
@@ -5082,7 +5463,13 @@ export class CombatScene extends Phaser.Scene {
         .setOrigin(0)
         .setStrokeStyle(isCursor ? 2 : 1, isCursor ? C.accent : C.panelEdge)
         .setInteractive({ useHandCursor: true });
-      cell.on("pointerdown", () => {
+      cell.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+        // Touch: first tap highlights (shows the option's name), a tap
+        // on the highlighted cell picks it. Mouse: one click picks.
+        if ((pointer?.wasTouch || isTouchUiActive()) && row !== this.pickerCursor && this.listOptionCount() >= 0) {
+          this.movePickerCursor(row - this.pickerCursor, false);
+          return;
+        }
         this.pickerCursor = row;
         this.activateAction();
       });
@@ -5192,10 +5579,16 @@ export class CombatScene extends Phaser.Scene {
       this.targetCursorGfx.destroy();
       this.targetCursorGfx = null;
     }
-    // Drop the one-shot listeners we attached.
+    // Drop the one-shot listeners we attached — and the hit area.
+    // Left interactive, a body keeps swallowing taps/clicks on its
+    // tile after the pick ends, so the tile beneath (step / melee
+    // bump) never hears them.
     for (const c of this.combat.combatants) {
       const body = this.bodies.get(c.id);
-      if (body) body.off("pointerdown");
+      if (body) {
+        body.off("pointerdown");
+        body.disableInteractive();
+      }
     }
   }
 
@@ -5386,8 +5779,9 @@ export class CombatScene extends Phaser.Scene {
     const lines = [
       `Casting: ${spell.name}`,
       `Range: ${range} tiles`,
-      "[↑↓←→] choose direction",
-      "[ESC]   cancel",
+      ...(isTouchUiActive()
+        ? ["Tap a tile in a line to fire", "Back to cancel"]
+        : ["[↑↓←→] choose direction", "[ESC]   cancel"]),
     ];
     const w = HUD_W - 12, h = lines.length * 18 + 28;
     const x = HUD_X + 6, y = HUD_Y + HUD_H - 6 - h;
@@ -5781,9 +6175,9 @@ export class CombatScene extends Phaser.Scene {
     this.clearPicker();
     const lines = [
       `Casting: ${spell.name}`,
-      "[↑↓←→] move reticle",
-      "[Enter] confirm",
-      "[ESC]   cancel",
+      ...(isTouchUiActive()
+        ? ["Tap a tile to aim", "Tap it again to confirm", "Back to cancel"]
+        : ["[↑↓←→] move reticle", "[Enter] confirm", "[ESC]   cancel"]),
     ];
     const w = HUD_W - 12, h = lines.length * 18 + 28;
     const x = HUD_X + 6, y = HUD_Y + HUD_H - 6 - h;
@@ -5931,9 +6325,9 @@ export class CombatScene extends Phaser.Scene {
     const lines = [
       `Throwing: ${item.name}`,
       `Range: ${range} tiles`,
-      "[↑↓←→] move reticle",
-      "[Enter] confirm",
-      "[ESC]   cancel",
+      ...(isTouchUiActive()
+        ? ["Tap a tile to aim", "Tap it again to confirm", "Back to cancel"]
+        : ["[↑↓←→] move reticle", "[Enter] confirm", "[ESC]   cancel"]),
     ];
     const w = HUD_W - 12, h = lines.length * 18 + 28;
     const x = HUD_X + 6, y = HUD_Y + HUD_H - 6 - h;
@@ -6270,8 +6664,17 @@ export class CombatScene extends Phaser.Scene {
     );
   }
 
-  private onTileClicked(col: number, row: number): void {
+  private onTileClicked(col: number, row: number, touch = false): void {
     if (!this.canTakePlayerInput()) return;
+    // Acting re-centres the view on the action.
+    if (touch) this.clearTouchPan();
+    // Touch: the pickers that normally need arrow keys + Enter take
+    // taps on the arena instead. (Mouse keeps its old behaviour.)
+    if (touch && this.onTileTappedInPicker(col, row)) return;
+    if (touch) {
+      void this.walkToTappedCell(col, row);
+      return;
+    }
     const actor = this.combat.current;
     const dc = col - actor.position.col;
     const dr = row - actor.position.row;
@@ -6282,6 +6685,66 @@ export class CombatScene extends Phaser.Scene {
     else if (dr === 1) dir = "s";
     else dir = "n";
     void this.tryPlayerStep(dir);
+  }
+
+  /** Touch: tap any highlighted movement cell to walk there, one step
+   *  at a time along that arm of the highlight; tapping the enemy that
+   *  ends an arm walks up to it and attacks (the bump). Stops early if
+   *  a step is blocked, an attack resolves, or the turn passes. */
+  private async walkToTappedCell(col: number, row: number): Promise<void> {
+    if (this.mode !== "default") return;
+    const me = this.combat.current;
+    const start = { ...me.position };
+    const reach = this.movementReachCells(start, this.combat.movePoints);
+    if (!reach.some((c) => c.col === col && c.row === row)) return;
+    const dc = Math.sign(col - start.col);
+    const dr = Math.sign(row - start.row);
+    const dir: Direction = dc > 0 ? "e" : dc < 0 ? "w" : dr > 0 ? "s" : "n";
+    const steps = Math.abs(col - start.col) + Math.abs(row - start.row);
+    for (let i = 0; i < steps; i++) {
+      if (!this.canTakePlayerInput() || this.combat.current.id !== me.id) return;
+      const before = { ...me.position };
+      await this.tryPlayerStep(dir);
+      if (this.combat.current.id !== me.id) return;
+      // Didn't move → that step was the attack (or was blocked).
+      if (me.position.col === before.col && me.position.row === before.row) return;
+    }
+  }
+
+  /** Touch handling for arena taps while a picker is open. Returns
+   *  true when the tap was consumed (so it never moves the actor).
+   *   - pick-direction (bows, directional spells): tap any tile in the
+   *     actor's row or column to fire that way.
+   *   - pick-tile (AOE / throw / fire-arrow): first tap moves the
+   *     reticle to the tapped tile (range rules still apply); tapping
+   *     the reticle's tile again confirms.
+   *   - any other sub-mode: swallow the tap (targets have their own
+   *     tap handlers; Back cancels). */
+  private onTileTappedInPicker(col: number, row: number): boolean {
+    if (this.mode === "default") return false;
+    if (this.mode === "pick-direction") {
+      const at = this.combat.current.position;
+      const dc = col - at.col;
+      const dr = row - at.row;
+      if ((dc === 0) === (dr === 0)) return true; // own tile or diagonal
+      const dir: Direction =
+        dc > 0 ? "e" : dc < 0 ? "w" : dr > 0 ? "s" : "n";
+      if (this.pendingAction?.kind === "range-direction") {
+        void this.fireDirectionalRange(dir);
+      } else {
+        void this.fireDirectionalSpell(dir);
+      }
+      return true;
+    }
+    if (this.mode === "pick-tile") {
+      if (col === this.tileCursorPos.col && row === this.tileCursorPos.row) {
+        this.activateAction();
+      } else {
+        this.moveTileCursor(col - this.tileCursorPos.col, row - this.tileCursorPos.row);
+      }
+      return true;
+    }
+    return true;
   }
 
   private onEndTurnClicked(): void {
@@ -6364,6 +6827,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private endActorTurn(): void {
+    this.clearTouchPan();
     this.clearMoveHints();
     // Shadow Step's pulse ends when the thief's turn does — that's
     // the canonical "ability is no longer active" moment. Restoring
@@ -7586,7 +8050,8 @@ export class CombatScene extends Phaser.Scene {
     for (let i = 0; i < PARTY_ACTIONS.length; i++) {
       const icon = this.actionIcons[i];
       const handle = this.actionRowHandles[i];
-      const action = this.subMenuOpen ? undefined : this.visibleActions[i];
+      const action =
+        this.subMenuOpen || this.isTouchAiming() ? undefined : this.visibleActions[i];
       if (!action) {
         // Unavailable / unused slot — hide it entirely and drop the
         // hit-box so a stray click can't activate it.
@@ -7793,8 +8258,18 @@ export class CombatScene extends Phaser.Scene {
       const group = log.slice(starts[i], i + 1 < starts.length ? starts[i + 1] : log.length);
       if (group.length > 0) turns.push(group);
     }
-    const latest = turns.pop() ?? [];
+    let latest = turns.pop() ?? [];
     this.logLatestText.setPosition(a.x, top).setText(latest.join("\n"));
+    // The current turn's lines must fit the box too (a busy turn in the
+    // short phone HUD used to spill into the Actions panel): keep the
+    // newest lines, then clip as a last resort for one long wrapped
+    // line. The full log is a tap away on touch.
+    const latestMaxH = Math.max(0, bottom - top);
+    while (latest.length > 1 && this.logLatestText.height > latestMaxH) {
+      latest = latest.slice(1);
+      this.logLatestText.setText(latest.join("\n"));
+    }
+    this.logLatestText.setCrop(0, 0, a.w + 8, latestMaxH);
 
     // History: older turns, newest turn first, capped at 24 lines.
     let history: string[] = [];
@@ -7815,6 +8290,8 @@ export class CombatScene extends Phaser.Scene {
       history = history.slice(0, -1);
       this.logText.setText(history.join("\n"));
     }
+    // No room left under the current turn → no divider either.
+    if (history.length === 0) this.logDivider.setVisible(false);
   }
 
   private highlightActiveActor(): void {
@@ -8693,6 +9170,40 @@ export class CombatScene extends Phaser.Scene {
       .setDepth(198)
       .setInteractive();
     objs.push(dim);
+    if (isTouchUiActive()) {
+      // Touch: drag to scroll the list, tap to close (no P / Esc /
+      // mouse wheel on a phone).
+      let startY = 0;
+      let lastY = 0;
+      let dragged = false;
+      let down = false;
+      dim.on("pointerdown", (p: Phaser.Input.Pointer) => {
+        down = true;
+        dragged = false;
+        startY = lastY = p.y;
+      });
+      const onMove = (p: Phaser.Input.Pointer) => {
+        if (!down || !this.inspectorOpen) return;
+        if (Math.abs(p.y - startY) > 8) dragged = true;
+        // One 36px scroll step per 36 screen px of drag.
+        const steps = Math.trunc((lastY - p.y) / 36);
+        if (steps !== 0) {
+          this.scrollInspector(steps);
+          lastY -= steps * 36;
+        }
+      };
+      const onUp = () => {
+        if (!down) return;
+        down = false;
+        if (!dragged) this.closeInspector();
+      };
+      this.input.on("pointermove", onMove);
+      this.input.on("pointerup", onUp);
+      dim.once("destroy", () => {
+        this.input.off("pointermove", onMove);
+        this.input.off("pointerup", onUp);
+      });
+    }
 
     const PX = ARENA_X + 10;
     const PY = ARENA_Y + 10;
@@ -8868,7 +9379,7 @@ export class CombatScene extends Phaser.Scene {
     const displayScale = shown / this.scale.width;
     // Never zoom out past the battlefield covering the whole view.
     const fit = Math.max(VIEW_W / ARENA_W, VIEW_H / ARENA_H);
-    return RENDER_SCALE * Math.max(fit, nativeWorldZoom(displayScale, TILE));
+    return RENDER_SCALE * Math.max(fit, nativeWorldZoom(displayScale, TILE, ARENA_TILE_STEP));
   }
 
   /** How long the camera stays on a far-away action's target after
@@ -9124,6 +9635,7 @@ export class CombatScene extends Phaser.Scene {
 
   update(): void {
     this.pulseActiveHighlight();
+    this.syncTouchCancel();
     try {
       if (this.statusAuras && this.combat) {
         this.statusAuras.draw(this.time.now, this.combat.combatants, this.bodies);
@@ -9141,6 +9653,8 @@ export class CombatScene extends Phaser.Scene {
       const z = this.desiredArenaZoom();
       if (Math.abs(z - cam.zoom) > 0.0005) cam.setZoom(cam.zoom + (z - cam.zoom) * 0.15);
     }
+    // Touch: the player dragged the view — hold it there.
+    if (this.touchPan) return;
     const target = this.arenaScrollTarget();
     if (!target) return;
     cam.scrollX += (target.x - cam.scrollX) * 0.2;

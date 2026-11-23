@@ -85,7 +85,7 @@ export function PlayLogOverlay({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
+        className="flex max-h-[90dvh] w-full max-w-2xl flex-col rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
           <h2 className="font-display text-base text-parchment">

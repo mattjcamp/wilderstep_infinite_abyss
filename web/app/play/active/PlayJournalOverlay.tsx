@@ -10,6 +10,7 @@
  * swallowed (capture phase) so the party doesn't walk under the modal.
  */
 
+import { useTouchUi } from "./PlayTouchControls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { filterLore, loreTags, type LoreRecord } from "@/play/lore";
 
@@ -21,6 +22,7 @@ export function PlayJournalOverlay({
   entries: ReadonlyArray<LoreRecord>;
   onClose: () => void;
 }) {
+  const touchUi = useTouchUi();
   const [tag, setTag] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const tags = useMemo(() => loreTags(entries), [entries]);
@@ -86,7 +88,7 @@ export function PlayJournalOverlay({
         role="dialog"
         aria-modal="true"
         aria-label="Journal"
-        className="flex h-[85vh] w-full max-w-4xl flex-col rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
+        className="flex h-[85dvh] w-full max-w-4xl flex-col rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
           <h2 className="font-display text-3xl text-parchment">Journal</h2>
@@ -222,7 +224,7 @@ export function PlayJournalOverlay({
           </div>
         )}
         <div className="border-t border-parchment/15 py-1 text-center font-mono text-xs uppercase tracking-wider text-parchment/50">
-          ↑↓ select · J / ESC close
+          {touchUi ? "Tap an entry to read it" : "↑↓ select · J / ESC close"}
         </div>
       </div>
     </div>
