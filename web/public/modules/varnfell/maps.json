@@ -134119,7 +134119,8 @@
               "map_id": "oracle_2",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -135491,19 +135492,20 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_lighthouse",
+            "name": "Lighthouse",
             "walkable": true,
             "obstructs": false,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
+            "light_source": true,
+            "light_range": 6,
             "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/settlements/lighthouse.png",
+            "tag": "map:settlements",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -138263,19 +138265,20 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_lighthouse",
+            "name": "Lighthouse",
             "walkable": true,
             "obstructs": false,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
+            "light_source": true,
+            "light_range": 6,
             "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/settlements/lighthouse.png",
+            "tag": "map:settlements",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -146866,7 +146869,8 @@
               "map_id": "town_2",
               "x": 16,
               "y": 23
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -151336,19 +151340,19 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
+            "id": "overworld_volcano",
+            "name": "Volcano",
             "walkable": false,
             "obstructs": true,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
+            "light_source": true,
+            "light_range": 3,
+            "animation": "smoke",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/volcano.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -157894,19 +157898,19 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
+            "id": "overworld_volcano",
+            "name": "Volcano",
             "walkable": false,
             "obstructs": true,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
+            "light_source": true,
+            "light_range": 3,
+            "animation": "smoke",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/volcano.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -161184,19 +161188,19 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
+            "id": "overworld_volcano",
+            "name": "Volcano",
             "walkable": false,
             "obstructs": true,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
+            "light_source": true,
+            "light_range": 3,
+            "animation": "smoke",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/volcano.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -164037,7 +164041,8 @@
               "map_id": "keep",
               "x": 16,
               "y": 23
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -168727,7 +168732,8 @@
               "map_id": "oracle_10",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -194612,7 +194618,8 @@
               "map_id": "oracle_9",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -195942,7 +195949,8 @@
               "map_id": "east_watch",
               "x": 8,
               "y": 19
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -201943,7 +201951,8 @@
               "map_id": "oracle_7",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -203269,8 +203278,8 @@
           },
           {
             "boat": false,
-            "id": "overworld_ruins",
-            "name": "Ruins",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -203280,9 +203289,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/settlements/ruins.png",
-            "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -209900,10 +209908,10 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_tree_pine",
+            "name": "Tree (Pine)",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -209911,8 +209919,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/trees_and_forests/tree_pine.png",
+            "tag": "map:trees & forests",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -211562,10 +211571,10 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_tree_pine",
+            "name": "Tree (Pine)",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -211573,8 +211582,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/trees_and_forests/tree_pine.png",
+            "tag": "map:trees & forests",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -211596,14 +211606,15 @@
               "map_id": "oracle_5",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_tree_pine",
+            "name": "Tree (Pine)",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -211611,15 +211622,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/trees_and_forests/tree_pine.png",
+            "tag": "map:trees & forests",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_tree_pine",
+            "name": "Tree (Pine)",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -211627,8 +211639,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/trees_and_forests/tree_pine.png",
+            "tag": "map:trees & forests",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -212357,7 +212370,8 @@
               "map_id": "oracle_3",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -213222,10 +213236,10 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_tree_pine",
+            "name": "Tree (Pine)",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -213233,8 +213247,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/trees_and_forests/tree_pine.png",
+            "tag": "map:trees & forests",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -221830,7 +221845,8 @@
               "map_id": "glen_hold",
               "x": 11,
               "y": 23
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -227216,7 +227232,8 @@
               "map_id": "oracle_6",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -231413,8 +231430,8 @@
           },
           {
             "boat": false,
-            "id": "overworld_ruins",
-            "name": "Ruins",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -231424,9 +231441,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/settlements/ruins.png",
-            "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -235785,7 +235801,8 @@
               "map_id": "oracle_8",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -241684,7 +241701,8 @@
               "map_id": "oracle_12",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -244275,10 +244293,11 @@
             "tag": "map:settlements",
             "background_sprite": "map/grass.png",
             "link": {
-              "map_id": "oracle_1",
+              "map_id": "oracle_4",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -244368,7 +244387,8 @@
               "map_id": "abandoned_tower",
               "x": 11,
               "y": 23
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -246351,7 +246371,8 @@
               "map_id": "oracle_11",
               "x": 6,
               "y": 11
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -252670,7 +252691,13 @@
             "spawn": null,
             "sprite": "map/settlements/ruins.png",
             "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "link": {
+              "map_id": "oracle_1",
+              "x": 6,
+              "y": 11
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -257450,7 +257477,8 @@
               "map_id": "town_hallowmere_overview",
               "x": 19,
               "y": 59
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -259049,8 +259077,8 @@
           },
           {
             "boat": false,
-            "id": "overworld_ruins",
-            "name": "Ruins",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -259060,14 +259088,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/settlements/ruins.png",
-            "tag": "map:settlements",
-            "background_sprite": "map/grass.png",
-            "link": {
-              "map_id": "oracle_4",
-              "x": 6,
-              "y": 11
-            }
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -543220,8 +543242,8 @@
             "background_sprite": "map/grass.png",
             "link": {
               "map_id": "varnfell",
-              "x": 2,
-              "y": 68
+              "x": 11,
+              "y": 73
             }
           },
           {
@@ -557514,8 +557536,8 @@
             "background_sprite": "map/grass.png",
             "link": {
               "map_id": "varnfell",
-              "x": 1,
-              "y": 77
+              "x": 2,
+              "y": 68
             }
           },
           {
