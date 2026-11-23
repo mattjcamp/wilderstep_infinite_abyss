@@ -8,19 +8,12 @@
 
 # Notes
 
-http://localhost:3000/play/active?touch=1
-
-
-
-On the iPad, 
+To run over the wifi network so I can test with my phone:
     npm run dev -- -H 0.0.0.0 
 and open 
-    http://<your Mac's IP>:3000/
+    http://192.168.86.173:3000/
 To find the Mac IP address: 
     ipconfig getifaddr en0
-play in Safari on the same Wi-Fi. The touch controls switch on by themselves.
-
-http://192.168.86.173:3000/
 
 cd web
 

@@ -1,0 +1,161 @@
+{
+  "_comment": "Varnfell lore. The Elder God inscriptions are read by bumping each oracle's ruined statue.",
+  "lore": [
+    {
+      "id": "elder_god_time",
+      "name": "The Elder God of Time",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Time was the second of the Elders to wake, and the first to count. It gave the dead god's world a before and an after, and with them the promise that everything would end.",
+        "Pilgrims left hourglasses at its feet. The sand in every one of them has long since run out."
+      ]
+    },
+    {
+      "id": "elder_god_space",
+      "name": "The Elder God of Space",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "When the Varn fell there was nowhere for its body to land. Space woke first and made room, and in that room the world began.",
+        "The pillars here once marked the turning of the stars. Now they only lean."
+      ]
+    },
+    {
+      "id": "elder_god_fire",
+      "name": "The Elder God of Fire",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Fire was born from the last heat of the Varn, banked deep beneath the world. It taught the first people warmth, and the first armies how to burn.",
+        "Its braziers were tended for a thousand years. They all went out on the same night."
+      ]
+    },
+    {
+      "id": "elder_god_water",
+      "name": "The Elder God of Water",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Water came to wash the wound the Varn left in the world. Its priests said every river is still trying to reach the place where the god fell.",
+        "The moat around this shrine has never once run dry."
+      ]
+    },
+    {
+      "id": "elder_god_air",
+      "name": "The Elder God of Air",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Air is the breath the Varn never took. It fills the hollow of the world and carries every word ever spoken up to the sky, where nothing answers.",
+        "Offerings here were whispered, never spoken aloud."
+      ]
+    },
+    {
+      "id": "elder_god_earth",
+      "name": "The Elder God of Earth",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Earth is the body of the Varn itself, and its Elder was the most patient of them all. It asked nothing of its faithful but that they stay.",
+        "The stone of this hall was never cut. It was asked to move, and it moved."
+      ]
+    },
+    {
+      "id": "elder_god_birth",
+      "name": "The Elder God of Birth",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Birth was the Elder who first dared to begin something new inside a dead god. Every seed and every child was counted among its works.",
+        "Mothers once walked here barefoot to ask its blessing. The garden still grows without them."
+      ]
+    },
+    {
+      "id": "elder_god_death",
+      "name": "The Elder God of Death",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Death was the gentlest of the Elders and the least feared. It promised that nothing in Varnfell would have to endure forever.",
+        "The graves here face downward, toward the Varn, so the dead can find their way home."
+      ]
+    },
+    {
+      "id": "elder_god_love",
+      "name": "The Elder God of Love",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Love was the Elder of joining: friend to friend, kin to kin, oath to oath. Its priests wed kings and farmers alike and asked the same vow of both.",
+        "Two names were carved on every stone of this court. Most have worn away."
+      ]
+    },
+    {
+      "id": "elder_god_hate",
+      "name": "The Elder God of Hate",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Hate was Love's twin, and the Elders never denied it. Where Love bound, Hate cut, and its priests taught that the world needed both.",
+        "Some say the war of the gods began in this shrine. The broken walls do not argue."
+      ]
+    },
+    {
+      "id": "elder_god_good",
+      "name": "The Elder God of Good",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Good was the Elder of the right deed, freely chosen. It asked for no worship, only that its followers treat others as they would be treated.",
+        "Its temple was the last to fall and the least damaged. Even its enemies were reluctant to break it."
+      ]
+    },
+    {
+      "id": "elder_god_evil",
+      "name": "The Elder God of Evil",
+      "tags": [
+        "Religion",
+        "Elder Gods"
+      ],
+      "xp": 10,
+      "paragraphs": [
+        "Evil was the Elder of the wrong deed, freely chosen, and of the hunger that makes the choice easy. Some whisper it is the last echo of the Dark the Varn destroyed.",
+        "The throne behind this statue was never meant for a god. It was meant for whoever knelt the longest."
+      ]
+    }
+  ]
+}
