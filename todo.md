@@ -1,6 +1,5 @@
 # TODO
 - Consider re-rolling random elements on a schedule based on the game calendar
-- implement something with random shrines
 
 # Varnfell
 
