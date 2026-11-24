@@ -7,12 +7,13 @@
  * member with the damage the fall did (falls never take anyone below
  * 1 HP; members already down are untouched).
  *
- * Closes on Enter / Esc / Space / E or a backdrop click. Movement keys
+ * Closes on Enter / Esc / Space / E or a tap / click anywhere. Movement keys
  * are swallowed so the party doesn't walk off under it.
  */
 
 import { useEffect } from "react";
 import { spriteUrl } from "@/data_model/spriteUrl";
+import { TapToContinue, useTapToContinue } from "./tapToContinue";
 import type { PitFallLine } from "./pitFall";
 
 const SWALLOW = new Set([
@@ -43,11 +44,10 @@ function FallingIcon() {
   return (
     <svg
       viewBox="0 0 16 16"
-      width={128}
-      height={128}
+      
       shapeRendering="crispEdges"
       aria-hidden="true"
-      className="drop-shadow-[0_0_18px_rgba(0,0,0,0.6)]"
+      className="h-32 w-32 short:h-14 short:w-14 drop-shadow-[0_0_18px_rgba(0,0,0,0.6)]"
     >
       <style>{`
         @keyframes pf-drop { 0%,49% { transform: translateY(0) } 50%,100% { transform: translateY(1px) } }
@@ -90,21 +90,21 @@ export function PlayPitFallOverlay({
   const hurt = lines.filter((l) => l.taken > 0);
   const totalTaken = hurt.reduce((sum, l) => sum + l.taken, 0);
 
+  const dismiss = useTapToContinue(onClose);
   return (
     <div
-      onClick={onClose}
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4"
+      onClick={dismiss}
+      className="fixed inset-0 z-40 flex cursor-pointer select-none items-center justify-center bg-black/70 p-4"
     >
       <article
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="pitfall-title"
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-lg border border-amber-700/50 bg-ink/95 shadow-2xl shadow-black/60"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-y-auto overscroll-contain rounded-lg border border-amber-700/50 bg-ink/95 shadow-2xl shadow-black/60"
       >
-        <header className="flex flex-col items-center px-5 pt-5">
+        <header className="flex flex-col items-center px-5 pt-5 short:pt-3">
           <FallingIcon />
-          <h2 id="pitfall-title" className="mt-2 font-display text-3xl text-parchment">
+          <h2 id="pitfall-title" className="mt-2 font-display text-3xl short:mt-1 short:text-2xl text-parchment">
             You Fell Through a Pit!
           </h2>
           <p className="mt-1 text-center text-base text-parchment/70">
@@ -118,7 +118,7 @@ export function PlayPitFallOverlay({
           </p>
         </header>
 
-        <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-5 py-4">
+        <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-5 py-4 short:flex-none short:overflow-visible short:py-2">
           {lines.map((l) => (
             <li
               key={l.id}
@@ -159,16 +159,7 @@ export function PlayPitFallOverlay({
           ))}
         </ul>
 
-        <footer className="flex justify-center px-5 pb-5">
-          <button
-            type="button"
-            onClick={onClose}
-            autoFocus
-            className="rounded border border-amber-600/60 bg-amber-900/30 px-5 py-1.5 font-display text-lg text-parchment hover:bg-amber-800/40"
-          >
-            Continue
-          </button>
-        </footer>
+        <TapToContinue />
       </article>
     </div>
   );

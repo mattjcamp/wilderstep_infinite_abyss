@@ -283003,7 +283003,7 @@
             "background_sprite": "map/grass.png"
           },
           {
-            "boat": false,
+            "boat": true,
             "id": "lake_edge_top",
             "name": "Lake Shore (top land)",
             "walkable": false,
@@ -283018,7 +283018,8 @@
             "sprite": "water/lake/lake_edge_top.png",
             "tag": "Water:Lake",
             "water": true,
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "boat_sprite": "map/boat_small.png"
           },
           {
             "boat": false,
@@ -283092,7 +283093,7 @@
             "water": true,
             "background_sprite": "map/grass.png",
             "link": {
-              "map_id": "town_hallowmere_overview",
+              "map_id": "varnfell",
               "x": 3,
               "y": 77
             }
@@ -283767,7 +283768,7 @@
             "water": true,
             "background_sprite": "map/grass.png",
             "link": {
-              "map_id": "town_hallowmere_overview",
+              "map_id": "varnfell",
               "x": 3,
               "y": 77
             }

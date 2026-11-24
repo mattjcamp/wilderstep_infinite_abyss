@@ -8,12 +8,13 @@
  * rewards: the meeting XP and the item they hand over. When it closes
  * the prisoner slips away toward the surface.
  *
- * Closes on Enter / Esc / Space / E or a backdrop click. Movement keys
+ * Closes on Enter / Esc / Space / E or a tap / click anywhere. Movement keys
  * are swallowed so the party doesn't walk off under it.
  */
 
 import { useEffect } from "react";
 import { spriteUrl } from "@/data_model/spriteUrl";
+import { TapToContinue, useTapToContinue } from "./tapToContinue";
 
 const SWALLOW = new Set([
   "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
@@ -42,7 +43,7 @@ function BrokenShackles() {
   const iron = "#9aa3ad";
   const dark = "#4b5560";
   return (
-    <svg viewBox="0 0 16 16" width={96} height={96} shapeRendering="crispEdges" aria-hidden="true">
+    <svg viewBox="0 0 16 16" className="h-24 w-24 short:h-14 short:w-14" shapeRendering="crispEdges" aria-hidden="true">
       <style>{`
         @keyframes pf-spark { 0%,49% { opacity: 1 } 50%,100% { opacity: 0.2 } }
         .pf-spark { animation: pf-spark 0.6s steps(1) infinite; }
@@ -85,16 +86,19 @@ export function PlayPrisonerFreedOverlay({
   }, [onClose]);
 
   const hasRewards = info.xp > 0 || !!info.item;
+  const dismiss = useTapToContinue(onClose);
   return (
-    <div onClick={onClose} className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4">
+    <div
+      onClick={dismiss}
+      className="fixed inset-0 z-40 flex cursor-pointer select-none items-center justify-center bg-black/70 p-4"
+    >
       <article
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="prisoner-title"
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-lg border border-amber-500/50 bg-ink/95 shadow-2xl shadow-black/60"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-y-auto overscroll-contain rounded-lg border border-amber-500/50 bg-ink/95 shadow-2xl shadow-black/60"
       >
-        <header className="flex flex-col items-center px-5 pt-5">
+        <header className="flex flex-col items-center px-5 pt-5 short:pt-3">
           <div className="flex items-center gap-3">
             <BrokenShackles />
             {info.sprite ? (
@@ -104,11 +108,12 @@ export function PlayPrisonerFreedOverlay({
                 alt=""
                 width={80}
                 height={80}
+                className="short:h-14 short:w-14"
                 style={{ imageRendering: "pixelated" }}
               />
             ) : null}
           </div>
-          <h2 id="prisoner-title" className="mt-2 font-display text-3xl text-parchment">
+          <h2 id="prisoner-title" className="mt-2 font-display text-3xl short:mt-1 short:text-2xl text-parchment">
             Prisoner Freed!
           </h2>
           <p className="mt-1 text-center text-base text-parchment/75">
@@ -122,7 +127,7 @@ export function PlayPrisonerFreedOverlay({
           ) : null}
         </header>
 
-        <section className="px-5 py-4">
+        <section className="px-5 py-4 short:py-2">
           <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/60">Rewards</h3>
           {hasRewards ? (
             <ul className="space-y-2">
@@ -161,17 +166,8 @@ export function PlayPrisonerFreedOverlay({
           )}
         </section>
 
-        <footer className="flex flex-col items-center gap-2 px-5 pb-5">
-          <p className="text-xs text-parchment/55">{info.name} will make their own way back to the surface.</p>
-          <button
-            type="button"
-            onClick={onClose}
-            autoFocus
-            className="rounded border border-amber-600/60 bg-amber-900/30 px-5 py-1.5 font-display text-lg text-parchment hover:bg-amber-800/40"
-          >
-            Continue
-          </button>
-        </footer>
+        <p className="px-5 pb-2 text-center text-xs text-parchment/55">{info.name} will make their own way back to the surface.</p>
+        <TapToContinue />
       </article>
     </div>
   );

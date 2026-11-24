@@ -10,9 +10,10 @@
  * overlay guards, combat shortcuts — applies unchanged.
  *
  * Detection: a coarse primary pointer (finger) turns the touch UI on.
- * `?touch=1` / `?touch=0` in the URL forces it on / off (remembered in
- * localStorage) so it can be tried on a desktop browser; `?touch=auto`
- * forgets the override and goes back to detection.
+ * `?touch=1` / `?touch=0` in the URL forces it on / off for this tab
+ * (sessionStorage, so it never sticks across visits) so it can be tried
+ * on a desktop browser; `?touch=auto` forgets the override and goes
+ * back to detection.
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -63,16 +64,25 @@ export function sendKey(
 
 function readForcedPref(): boolean | null {
   try {
+    // Older builds kept the override in localStorage, so a one-off
+    // `?touch=1` test left the touch controls stuck on in that browser
+    // for good (e.g. a laptop in fullscreen). Drop any such leftover.
+    window.localStorage.removeItem(TOUCH_PREF_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+  try {
+    const store = window.sessionStorage;
     const q = new URLSearchParams(window.location.search).get("touch");
     if (q === "auto") {
-      window.localStorage.removeItem(TOUCH_PREF_KEY);
+      store.removeItem(TOUCH_PREF_KEY);
       return null;
     }
     if (q === "1" || q === "0") {
-      window.localStorage.setItem(TOUCH_PREF_KEY, q);
+      store.setItem(TOUCH_PREF_KEY, q);
       return q === "1";
     }
-    const saved = window.localStorage.getItem(TOUCH_PREF_KEY);
+    const saved = store.getItem(TOUCH_PREF_KEY);
     if (saved === "1" || saved === "0") return saved === "1";
   } catch {
     /* storage unavailable — fall through to detection */

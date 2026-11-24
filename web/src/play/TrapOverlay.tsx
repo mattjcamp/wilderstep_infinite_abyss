@@ -6,12 +6,13 @@
  * per party member: who was hit, for how much and what kind of damage,
  * whether they made their save, any affliction, and who was knocked out.
  *
- * Closes on Enter / Esc / Space / E or a backdrop click. Movement keys
+ * Closes on Enter / Esc / Space / E or a tap / click anywhere. Movement keys
  * are swallowed so the party doesn't walk off under it.
  */
 
 import { useEffect } from "react";
 import { spriteUrl } from "@/data_model/spriteUrl";
+import { TapToContinue, useTapToContinue } from "./tapToContinue";
 import type { TrapCard } from "./traps";
 
 const SWALLOW = new Set([
@@ -63,8 +64,7 @@ function TrapIcon({ damageType, teleport }: { damageType?: string; teleport: boo
   return (
     <svg
       viewBox="0 0 16 16"
-      width={112}
-      height={112}
+      className="h-28 w-28 short:h-14 short:w-14"
       shapeRendering="crispEdges"
       aria-hidden="true"
       style={{ filter: `drop-shadow(0 0 14px ${accent}88)` }}
@@ -106,21 +106,21 @@ export function PlayTrapOverlay({
   const showRows = card.kind === "damage" || card.kind === "effect";
   const dmgWord = card.damageType ? `${card.damageType}` : "";
 
+  const dismiss = useTapToContinue(onClose);
   return (
     <div
-      onClick={onClose}
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4"
+      onClick={dismiss}
+      className="fixed inset-0 z-40 flex cursor-pointer select-none items-center justify-center bg-black/70 p-4"
     >
       <article
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="trapcard-title"
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-lg border border-ember/50 bg-ink/95 shadow-2xl shadow-black/60"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-y-auto overscroll-contain rounded-lg border border-ember/50 bg-ink/95 shadow-2xl shadow-black/60"
       >
-        <header className="flex flex-col items-center px-5 pt-5">
+        <header className="flex flex-col items-center px-5 pt-5 short:pt-3">
           <TrapIcon damageType={card.damageType} teleport={card.kind === "teleport"} />
-          <h2 id="trapcard-title" className="mt-2 font-display text-3xl text-parchment">
+          <h2 id="trapcard-title" className="mt-2 font-display text-3xl short:mt-1 short:text-2xl text-parchment">
             It&apos;s a Trap! — {card.trapName}
           </h2>
           {card.description ? (
@@ -138,7 +138,7 @@ export function PlayTrapOverlay({
         </header>
 
         {showRows ? (
-          <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-5 py-4">
+          <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-5 py-4 short:flex-none short:overflow-visible short:py-2">
             {card.lines.map((l) => (
               <li
                 key={l.id}
@@ -212,16 +212,7 @@ export function PlayTrapOverlay({
           <div className="py-2" />
         )}
 
-        <footer className="flex justify-center px-5 pb-5">
-          <button
-            type="button"
-            onClick={onClose}
-            autoFocus
-            className="rounded border border-ember/60 bg-ember/20 px-5 py-1.5 font-display text-lg text-parchment hover:bg-ember/30"
-          >
-            Continue
-          </button>
-        </footer>
+        <TapToContinue />
       </article>
     </div>
   );
