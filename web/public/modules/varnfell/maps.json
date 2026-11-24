@@ -259125,7 +259125,12 @@
             "sprite": "water/lake/lake_inlet_top.png",
             "tag": "Water:Lake",
             "water": true,
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "link": {
+              "map_id": "town_hallowmere_overview",
+              "x": 39,
+              "y": 29
+            }
           },
           {
             "boat": false,
@@ -283085,7 +283090,12 @@
             "sprite": "water/lake/lake_edge_top.png",
             "tag": "Water:Lake",
             "water": true,
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "link": {
+              "map_id": "town_hallowmere_overview",
+              "x": 3,
+              "y": 77
+            }
           }
         ],
         [
@@ -283755,7 +283765,12 @@
             "sprite": "water/lake/lake_edge_bottom.png",
             "tag": "Water:Lake",
             "water": true,
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "link": {
+              "map_id": "town_hallowmere_overview",
+              "x": 3,
+              "y": 77
+            }
           }
         ],
         [
