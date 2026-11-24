@@ -4358,6 +4358,7 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
     fog_style?: FogStyleByMode;
     passive_regen?: { hp: number; mp: number };
     exploration_xp?: number;
+    dungeon_respawn_days?: number;
   }) => {
     if (state.kind !== "ok") return;
     const updatedMap: MapRecord = {
@@ -4415,6 +4416,17 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
         next.exploration_xp;
     } else {
       delete (updatedMap as Record<string, unknown>).exploration_xp;
+    }
+    // Dungeon respawn delay: persist only when on (≥ 1 day), so maps
+    // whose dungeons stay cleared carry no key at all.
+    if (
+      typeof next.dungeon_respawn_days === "number" &&
+      next.dungeon_respawn_days >= 1
+    ) {
+      (updatedMap as Record<string, unknown>).dungeon_respawn_days =
+        Math.floor(next.dungeon_respawn_days);
+    } else {
+      delete (updatedMap as Record<string, unknown>).dungeon_respawn_days;
     }
     // Passive regen: persist only when it actually heals, so non-restful
     // maps stay shape-clean (no `passive_regen` key at all).
@@ -5462,6 +5474,11 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
                     const v = (mapRecord as Record<string, unknown>)
                       .exploration_xp;
                     return typeof v === "number" && v >= 0 ? v : undefined;
+                  })(),
+                  dungeon_respawn_days: ((): number | undefined => {
+                    const v = (mapRecord as Record<string, unknown>)
+                      .dungeon_respawn_days;
+                    return typeof v === "number" && v >= 1 ? v : undefined;
                   })(),
                   fog_style: normalizeFogStyles(
                     (mapRecord as Record<string, unknown>).fog_style,

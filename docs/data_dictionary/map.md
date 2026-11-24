@@ -31,6 +31,7 @@ The on-disk representation in a real module will collect many records of this ty
 |---|---|---|---|---|
 | `id` | string | yes | Unique identifier for this record, scoped to its module | TBD |
 | `name` | string | yes | Human-readable display name | TBD |
+| `dungeon_respawn_days` | integer ≥ 1 | no | Dungeon respawn delay in in-game days. A generated dungeon whose entrance is on this map, once cleared, is reclaimed by monsters this many days later: the entrance placard shows ⟳ Reclaimed, and the next visit forgets the old run and rolls a new seed (new layout, foes and loot; the clear bonus pays again). Absent / 0 → cleared dungeons stay cleared. Set in Map Properties. Clear times are kept in the save as `party.clearedDungeonsAt`; see `web/src/play/dungeonRespawn.ts`. | Yes |
 
 ## Polymorphic discriminators
 

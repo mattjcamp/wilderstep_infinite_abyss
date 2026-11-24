@@ -34,6 +34,7 @@ export function LinkPlacard({
   explored,
   questTargets,
   cleared = false,
+  reclaimed = false,
   leavesArea = false,
   onConfirm,
   onCancel,
@@ -56,6 +57,11 @@ export function LinkPlacard({
    *  foe on every floor defeated). Adds a green ✓ Cleared chip and a
    *  context line, like the quest treatment does for quests. */
   cleared?: boolean;
+  /** Dungeon entrances: cleared before, but the map's respawn delay
+   *  (`dungeon_respawn_days`) has passed — monsters have moved back
+   *  in and the halls will be rolled anew. Adds a ⟳ Reclaimed chip
+   *  and a context line. */
+  reclaimed?: boolean;
   /** Generated-dungeon way out (`bottom_exit`): asks to leave the area
    *  ("Leave") instead of just climbing. */
   leavesArea?: boolean;
@@ -157,6 +163,14 @@ export function LinkPlacard({
                 ✓ Cleared
               </span>
             ) : null}
+            {reclaimed ? (
+              <span
+                className="rounded border border-ember/60 bg-ember/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-orange-200"
+                title="You cleared this dungeon once, but monsters have moved back in."
+              >
+                ⟳ Reclaimed
+              </span>
+            ) : null}
             {leavesArea ? (
               <span
                 className="rounded border border-amber-300/50 bg-amber-300/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200"
@@ -209,6 +223,16 @@ export function LinkPlacard({
               <span className="text-emerald-100/70">
                 {" "}
                 — every foe here has been defeated.
+              </span>
+            </p>
+          ) : null}
+          {reclaimed ? (
+            <p className="mt-3 rounded border border-ember/40 bg-ember/10 px-3 py-2 text-xs leading-snug text-orange-100/90">
+              <span className="font-semibold text-orange-200">⟳ Reclaimed</span>
+              <span className="text-orange-100/70">
+                {" "}
+                — monsters have moved back in since you cleared it. The halls
+                have shifted.
               </span>
             </p>
           ) : null}

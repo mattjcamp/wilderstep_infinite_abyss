@@ -193,6 +193,11 @@ export interface SavedPartyState {
    *  fully cleared and been rewarded for — so each dungeon pays its
    *  clear bonus once. Absent on older saves → none. */
   clearedDungeons?: ReadonlyArray<string>;
+  /** Game-clock minute (`clockMinutes`) each cleared dungeon instance
+   *  was cleared at — drives map-level dungeon respawn
+   *  (`dungeon_respawn_days`, see `@/play/dungeonRespawn`). Absent on
+   *  older saves / instances → stamped the first time it's checked. */
+  clearedDungeonsAt?: Record<string, number>;
   /** In-game `dayIndex` (from GameTime) of the most recent Gnome
    *  Tinker use. The ability gates on `currentDay !== last_tinker_day`
    *  so the party can craft once per in-game day. Absent in legacy

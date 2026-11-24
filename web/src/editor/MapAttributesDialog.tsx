@@ -85,6 +85,10 @@ interface MapAttributes {
    *  module's amount (settings.exploration_xp.map). 0 turns the reward
    *  off for this map; a larger number makes it worth more. */
   exploration_xp?: number;
+  /** Dungeon respawn delay in in-game days. Cleared generated
+   *  dungeons with an entrance on this map are reclaimed by monsters
+   *  this long after the clear. Absent → never. */
+  dungeon_respawn_days?: number;
 }
 
 type FogBand = "day" | "twilight" | "night";
@@ -147,6 +151,12 @@ export function MapAttributesDialog({
       ? String(initial.exploration_xp)
       : "",
   );
+  // Respawn delay as a string so blank = "never".
+  const [respawnDays, setRespawnDays] = useState<string>(
+    typeof initial.dungeon_respawn_days === "number"
+      ? String(initial.dungeon_respawn_days)
+      : "",
+  );
   const [nameError, setNameError] = useState<string | null>(null);
 
   // Close on Escape, save on Cmd/Ctrl+Enter — mirrors common
@@ -179,6 +189,7 @@ export function MapAttributesDialog({
     regenHp,
     regenMp,
     explorationXp,
+    respawnDays,
   ]);
 
   const handleSave = () => {
@@ -228,6 +239,13 @@ export function MapAttributesDialog({
         if (t === "") return undefined;
         const n = Number(t);
         return Number.isFinite(n) && n >= 0 ? Math.floor(n) : undefined;
+      })(),
+      // Blank / 0 / invalid → undefined (cleared dungeons stay cleared).
+      dungeon_respawn_days: (() => {
+        const n = Math.floor(Number(respawnDays.trim()));
+        return respawnDays.trim() !== "" && Number.isFinite(n) && n >= 1
+          ? n
+          : undefined;
       })(),
     });
   };
@@ -506,6 +524,29 @@ export function MapAttributesDialog({
               XP each party member earns the first time the party enters
               this map. Blank uses the module&apos;s amount; 0 turns it off
               (good for basements, arenas, or easily-farmed spots).
+            </span>
+          </label>
+
+          {/* Dungeon respawn ---------------------------------------- */}
+          <label className="flex flex-col gap-1">
+            <span className="text-[13px] text-parchment/85 font-mono">
+              dungeon respawn (days)
+            </span>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={respawnDays}
+              onChange={(e) => setRespawnDays(e.target.value)}
+              placeholder="never"
+              className="w-32 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
+            />
+            <span className="text-xs text-parchment/65">
+              In-game days after the party clears a generated dungeon whose
+              entrance is on this map before monsters reclaim it. The next
+              visit rolls a brand-new dungeon (new layout, foes and loot) and
+              pays the clear bonus again. Blank means cleared dungeons stay
+              cleared.
             </span>
           </label>
         </div>

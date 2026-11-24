@@ -263955,7 +263955,8 @@
         "/audio/The Red Moon.mp3",
         "/audio/aurelian_overture.mp3",
         "/audio/winds_of_destiny.mp3"
-      ]
+      ],
+      "dungeon_respawn_days": 21
     },
     {
       "id": "town_hallowmere_overview",

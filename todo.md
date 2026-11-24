@@ -1,9 +1,6 @@
 # TODO
-- Consider re-rolling random elements on a schedule based on the game calendar
 
 # Varnfell
-
-
 
 # Notes
 

@@ -109,6 +109,7 @@ import {
 } from "@/sim/dungeon/dungeonLevelToMap";
 import {
   clearAllDungeonSessions,
+  clearDungeonSession,
   dungeonInstanceKey,
   getOrCreateDungeonSession,
   getFloorMutations,
@@ -636,6 +637,11 @@ import {
   isDungeonCleared,
   type ClearMonster,
 } from "@/play/dungeonClear";
+import {
+  dungeonRespawnStatus,
+  reclaimDungeon,
+  stampDungeonCleared,
+} from "@/play/dungeonRespawn";
 import { herbalismOnStep } from "@/play/herbalism";
 import {
   readPressurePlate,
@@ -791,6 +797,12 @@ interface PlayMapRecord {
    *  for towns / taverns / safe havens; absent → no passive healing.
    *  Never applied in dungeons (the host gates that). */
   passive_regen?: { hp: number; mp: number };
+  /** Optional dungeon respawn: cleared generated dungeons whose
+   *  entrance is on this map are reclaimed by monsters this many
+   *  in-game days after the clear, and roll a fresh layout on the
+   *  next visit. Absent / 0 → cleared stays cleared. See
+   *  `@/play/dungeonRespawn`. */
+  dungeon_respawn_days?: number;
 }
 
 /** Minimal item shape PlayHost uses to render overlays. The full
@@ -1148,6 +1160,9 @@ export function PlayHost() {
     /** Dungeon entrances only — this instance has been cleared
      *  (every foe on every floor defeated). */
     cleared?: boolean;
+    /** Dungeon entrances only — cleared once, but the map's respawn
+     *  delay has passed and monsters have moved back in. */
+    reclaimed?: boolean;
   } | null>(null);
   const pendingPlaceActionRef = useRef<(() => void) | null>(null);
   /** A quest travel reward waiting on the player — mirrors
@@ -1707,13 +1722,17 @@ export function PlayHost() {
       const name = record?.name ?? d.dungeonId;
       const xp = dungeonClearXp(record?.clear_xp, catalog.explorationXp.dungeon);
       const award = applyExplorationXp(
-        {
-          ...save,
-          party: {
-            ...save.party,
-            clearedDungeons: [...(save.party.clearedDungeons ?? []), d.instanceId],
+        stampDungeonCleared(
+          {
+            ...save,
+            party: {
+              ...save.party,
+              clearedDungeons: [...(save.party.clearedDungeons ?? []), d.instanceId],
+            },
           },
-        },
+          d.instanceId,
+          clockRef.current,
+        ),
         catalog,
         xp,
       );
@@ -5487,15 +5506,31 @@ export function PlayHost() {
                       row: entrancePos.row,
                     })
                   : dungeonId;
+                // Map-level respawn: a long-cleared run reads as
+                // reclaimed (and unexplored — it'll roll new halls).
+                const respawn = saveRef.current
+                  ? dungeonRespawnStatus({
+                      save: saveRef.current,
+                      instanceId,
+                      mapRespawnDays:
+                        catalogRef.current?.map?.dungeon_respawn_days,
+                      nowMinutes: clockRef.current,
+                    })
+                  : ({ kind: "not-cleared" } as const);
+                const reclaimed = respawn.kind === "reclaimed";
                 setPlacard({
                   placeKind: "dungeon",
                   name: dest?.name ?? ev.dungeonId,
                   description: dest?.description,
-                  explored: !!saveRef.current?.dungeons?.[instanceId],
+                  explored:
+                    !reclaimed && !!saveRef.current?.dungeons?.[instanceId],
                   // Same per-instance key checkDungeonClear records.
-                  cleared: (
-                    saveRef.current?.party.clearedDungeons ?? []
-                  ).includes(instanceId),
+                  cleared:
+                    !reclaimed &&
+                    (saveRef.current?.party.clearedDungeons ?? []).includes(
+                      instanceId,
+                    ),
+                  reclaimed,
                   // Reach / spelunking / dungeon-kill steps make the
                   // entrance quest-relevant, whatever the floor.
                   questTargets: questsTargetingPlace(
@@ -6713,7 +6748,7 @@ export function PlayHost() {
        *  two distinct dungeons. */
       entrancePos: { col: number; row: number },
     ) {
-      const save = saveRef.current;
+      let save = saveRef.current;
       const cat = state.kind === "ok" ? state.catalog : null;
       if (!save || !cat) return;
       const record = cat.dungeons.find((d) => d.id === dungeonId);
@@ -6740,6 +6775,32 @@ export function PlayHost() {
         col: entrancePos.col,
         row: entrancePos.row,
       });
+      // Dungeon respawn: on maps with `dungeon_respawn_days`, a run
+      // cleared long enough ago is forgotten here so this entrance
+      // rolls a fresh dungeon (new seed → new halls, foes and loot,
+      // and the clear bonus is up for grabs again).
+      const respawn = dungeonRespawnStatus({
+        save,
+        instanceId,
+        mapRespawnDays: cat.map.dungeon_respawn_days,
+        nowMinutes: clockRef.current,
+      });
+      if (respawn.kind === "needs-stamp") {
+        save = stampDungeonCleared(save, instanceId, clockRef.current);
+        saveRef.current = save;
+      } else if (respawn.kind === "reclaimed") {
+        save = reclaimDungeon(save, instanceId);
+        saveRef.current = save;
+        clearDungeonSession(instanceId);
+        const reclaimedName = record.name ?? dungeonId;
+        setLogMessages((prev) => {
+          const next = [
+            ...prev,
+            `Monsters have reclaimed ${reclaimedName}. Its halls have shifted since you were last here.`,
+          ];
+          return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+        });
+      }
       const persisted = save.dungeons?.[instanceId];
       const seed = persisted
         ? persisted.seed
@@ -8791,6 +8852,7 @@ export function PlayHost() {
           explored={placard.explored}
           questTargets={placard.questTargets}
           cleared={placard.cleared}
+          reclaimed={placard.reclaimed}
           leavesArea={placard.leavesArea}
           onConfirm={() => {
             const act = pendingPlaceActionRef.current;
