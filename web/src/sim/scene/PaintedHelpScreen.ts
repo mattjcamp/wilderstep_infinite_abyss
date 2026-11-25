@@ -133,7 +133,7 @@ const TOUCH_COMBAT: ShortcutRow[] = [
 
 const TIPS: string[] = [
   "Torches and the Light spell brighten the party's light radius.",
-  "Detect Traps reveals nearby trap tiles when a Thief is in the party.",
+  "Detect Traps: a Thief rolls INT to spot each trap as it comes into view.",
   "Boats stay where you leave them — step on to sail, step ashore to leave.",
   "Talk to NPCs by walking into them.",
   "Defeated lairs and placed encounters never respawn.",

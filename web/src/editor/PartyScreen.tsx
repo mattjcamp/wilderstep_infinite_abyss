@@ -314,7 +314,7 @@ function xpProgressInLevel(
 /** Resolve the set of ability ids unlocked by `members`. An ability is
  *  unlocked when any active member has the granting class (with the
  *  ability's min_level met) or the granting race. */
-function computeUnlockedAbilities(
+export function computeUnlockedAbilities(
   members: ReadonlyArray<PartyCharacterRef>,
   races: ReadonlyArray<PartyRaceRef>,
   classes: ReadonlyArray<PartyClassRef>,
@@ -678,14 +678,20 @@ export function PartyScreen({
     // there's no Ability record for it. Without this pass, casting
     // Light would silently activate without ever appearing in the
     // Effects list.
+    // Effects backed by an Ability that nobody in the roster has
+    // (e.g. Detect Traps switched on at the start, or after the Thief
+    // left) never get a row: if no character has it, there's nothing
+    // to turn on.
     const existingIds = new Set(rows.map((r) => r.ability.id));
+    const abilityIds = new Set(abilities.map((a) => a.id));
+    const lockedAbility = (id: string) => abilityIds.has(id) && !unlocked.has(id);
     const extraIds = new Set<string>();
     for (const id of activeEffectIds) {
-      if (!existingIds.has(id) && isActive(id)) extraIds.add(id);
+      if (!existingIds.has(id) && !lockedAbility(id) && isActive(id)) extraIds.add(id);
     }
     if (effectDurations) {
       for (const [id, steps] of effectDurations) {
-        if (steps > 0 && !existingIds.has(id)) extraIds.add(id);
+        if (steps > 0 && !existingIds.has(id) && !lockedAbility(id)) extraIds.add(id);
       }
     }
     for (const id of extraIds) {

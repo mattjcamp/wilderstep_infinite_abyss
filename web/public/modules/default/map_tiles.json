@@ -6902,7 +6902,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_chasm.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_chasm.png",
       "tag": "Dungeons:volcanic tubes:lava & pits"
     },
     {
@@ -6918,7 +6918,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_chasm_centre.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_chasm_centre.png",
       "tag": "Dungeons:volcanic tubes:lava & pits"
     },
     {
@@ -6934,7 +6934,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_chasm_top.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_chasm_top.png",
       "tag": "Dungeons:volcanic tubes:lava & pits",
       "background_sprite": "dungeons/volcanic_tubes/floors/floor_ash.png"
     },
@@ -6951,7 +6951,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_chasm_bottom.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_chasm_bottom.png",
       "tag": "Dungeons:volcanic tubes:lava & pits",
       "background_sprite": "dungeons/volcanic_tubes/floors/floor_ash.png"
     },
@@ -6968,7 +6968,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_chasm_left.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_chasm_left.png",
       "tag": "Dungeons:volcanic tubes:lava & pits",
       "background_sprite": "dungeons/volcanic_tubes/floors/floor_ash.png"
     },
@@ -6985,7 +6985,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_chasm_right.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_chasm_right.png",
       "tag": "Dungeons:volcanic tubes:lava & pits",
       "background_sprite": "dungeons/volcanic_tubes/floors/floor_ash.png"
     },
@@ -7002,7 +7002,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_chasm_corner_tl.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_chasm_corner_tl.png",
       "tag": "Dungeons:volcanic tubes:lava & pits",
       "background_sprite": "dungeons/volcanic_tubes/floors/floor_ash.png"
     },
@@ -7019,7 +7019,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_chasm_corner_tr.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_chasm_corner_tr.png",
       "tag": "Dungeons:volcanic tubes:lava & pits",
       "background_sprite": "dungeons/volcanic_tubes/floors/floor_ash.png"
     },
@@ -7036,7 +7036,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_chasm_corner_bl.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_chasm_corner_bl.png",
       "tag": "Dungeons:volcanic tubes:lava & pits",
       "background_sprite": "dungeons/volcanic_tubes/floors/floor_ash.png"
     },
@@ -7053,7 +7053,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_chasm_corner_br.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_chasm_corner_br.png",
       "tag": "Dungeons:volcanic tubes:lava & pits",
       "background_sprite": "dungeons/volcanic_tubes/floors/floor_ash.png"
     },
@@ -7070,7 +7070,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/solid_rock.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/solid_rock.png",
       "tag": "Dungeons:volcanic tubes:lava & pits",
       "description": "Unbroken basalt — what the generator paints between the tubes."
     },
@@ -7087,7 +7087,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeons/volcanic_tubes/lava/lava_pool.png",
+      "sprite": "dungeons/volcanic_tubes/lava_and_pits/lava_pool.png",
       "tag": "Dungeons:volcanic tubes:lava & pits",
       "description": "Open molten rock. Impassable; lights the tube around it."
     },

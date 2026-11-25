@@ -439,7 +439,7 @@ def build():
                         if 0 <= nx < N and 0 <= ny < N and px[nx, ny] not in lava and px[nx, ny][3] > 0:
                             px[x, y] = L1
                             break
-        out = rel.replace("water_and_pits/pit", "lava/lava_chasm")
+        out = rel.replace("water_and_pits/pit", "lava_and_pits/lava_chasm")
         save(im, out)
         extra = {}
         if rel not in ("water_and_pits/pit.png", "water_and_pits/pit_centre.png"):
@@ -461,13 +461,13 @@ def build():
     for _ in range(4):
         x, y = rnd.randrange(N), rnd.randrange(N)
         rp[x, y] = (70, 18, 10, 255)
-    rock.resize((N * 2, N * 2), Image.NEAREST).save(os.path.join(OUT, "lava", "solid_rock.png")) if not os.path.exists(os.path.join(OUT, "lava", "solid_rock.png")) or DRAW_ART else None
-    add("pit_centre", "Volcanic Solid Rock", "lava/solid_rock.png", "lava & pits",
+    rock.resize((N * 2, N * 2), Image.NEAREST).save(os.path.join(OUT, "lava_and_pits", "solid_rock.png")) if not os.path.exists(os.path.join(OUT, "lava_and_pits", "solid_rock.png")) or DRAW_ART else None
+    add("pit_centre", "Volcanic Solid Rock", "lava_and_pits/solid_rock.png", "lava & pits",
         description="Unbroken basalt — what the generator paints between the tubes.")
 
     pool = paint_lava(blank(), lambda x, y, c: True)
-    save(pool, "lava/lava_pool.png")
-    add("lava_pool", "Lava Pool, Bubbling", "lava/lava_pool.png", "lava & pits",
+    save(pool, "lava_and_pits/lava_pool.png")
+    add("lava_pool", "Lava Pool, Bubbling", "lava_and_pits/lava_pool.png", "lava & pits",
         light_source=True, light_range=3, animation="fire",
         description="Open molten rock. Impassable; lights the tube around it.")
 

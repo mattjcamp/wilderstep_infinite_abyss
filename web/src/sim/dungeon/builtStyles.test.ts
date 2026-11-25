@@ -73,7 +73,7 @@ const CASES: Array<{ style: DungeonStyle; prefix: string; folder: string; mustSe
       "walls/wall_top.png", "walls/wall_left.png", "walls/wall_right.png", "walls/wall_magma_crack.png",
       "floors/floor_ash.png", "floors/floor_cinders.png", "floors/floor_lava_cracks.png",
       // Solid rock is basalt; chasm interiors are lava.
-      "lava/solid_rock.png", "lava/lava_chasm_centre.png",
+      "lava_and_pits/solid_rock.png", "lava_and_pits/lava_chasm_centre.png",
       "doors_and_stairs/stairs_up.png", "doors_and_stairs/stairs.png", "walls/wall_exit.png",
       "features/throne.png", "features/obsidian_spire.png",
     ],
@@ -125,10 +125,10 @@ describe("volcanic chasms", () => {
           for (const cell of row) {
             if (cell.id === "volcanic_pit_centre" && cell.walkable === false && !cell.pit) {
               // Wall-backed solid rock (autotile "rock" piece).
-              expect(cell.sprite).toBe("dungeons/volcanic_tubes/lava/solid_rock.png");
+              expect(cell.sprite).toBe("dungeons/volcanic_tubes/lava_and_pits/solid_rock.png");
             }
             if (cell.pit && cell.id === "volcanic_pit_centre") {
-              expect(cell.sprite).toBe("dungeons/volcanic_tubes/lava/lava_chasm_centre.png");
+              expect(cell.sprite).toBe("dungeons/volcanic_tubes/lava_and_pits/lava_chasm_centre.png");
               lavaInPit++;
             }
           }

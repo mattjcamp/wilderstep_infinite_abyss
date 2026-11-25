@@ -32,6 +32,7 @@ import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import { ModelView } from "./ModelView";
 import { PartyAttributesEditor } from "./PartyAttributesEditor";
 import {
+  computeUnlockedAbilities,
   PartyScreen,
   type PartyAbilityRef,
   type PartyCharacterRef,
@@ -261,6 +262,15 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
 
   const party =
     state.kind === "ok" ? effectiveParty(state.inherited, state.own) : null;
+  // Abilities the roster has — gates which effects can start switched on.
+  const unlockedAbilityIds = useMemo(() => {
+    if (state.kind !== "ok" || !party) return new Set<string>();
+    const byId = new Map(state.characters.map((c) => [c.id, c]));
+    const members = (party.roster ?? [])
+      .map((id) => byId.get(id))
+      .filter((c): c is PartyCharacterRef => !!c);
+    return computeUnlockedAbilities(members, state.races, state.classes);
+  }, [state, party]);
   const ownKeys = useMemo(
     () => new Set(state.kind === "ok" ? Object.keys(state.own ?? {}) : []),
     [state],
@@ -327,6 +337,7 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
               ownKeys={ownKeys}
               hasParent={state.inherited !== null}
               abilities={state.abilities}
+              unlockedAbilityIds={unlockedAbilityIds}
               onSet={onSetAttribute}
               onReset={onResetAttribute}
             />

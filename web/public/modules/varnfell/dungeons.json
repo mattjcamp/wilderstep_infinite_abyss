@@ -52,7 +52,9 @@
       "id": "stone_halls",
       "name": "Stone Halls",
       "description": "Torch-lit halls of fitted stone, built by hands long gone.",
-      "tags": [],
+      "tags": [
+        "Keep"
+      ],
       "style": "dungeon",
       "difficulty": "normal",
       "size": {
@@ -189,7 +191,9 @@
       "id": "dwarven_halls",
       "name": "Dwarven Halls",
       "description": "An ornate gate opens into a hidden underground dwarven city",
-      "tags": [],
+      "tags": [
+        "Keep"
+      ],
       "style": "dungeon",
       "difficulty": "hard",
       "size": {
@@ -284,7 +288,9 @@
       "id": "deep_one_shrine",
       "name": "Deep Ones Shrine",
       "description": "A forbidding building decorated with the artifacts of The Deep Ones. This is the only place in Varnfell to get powerful healing, but it comes at a great cost and requires even ordinary people to descend to the buried grottos where The Deep Ones magic is powerful.",
-      "tags": [],
+      "tags": [
+        "Shrine"
+      ],
       "style": "manor",
       "difficulty": "normal",
       "size": {
@@ -388,6 +394,88 @@
       "prisoner_npc": "frida",
       "prisoner_reward": "mana_potion",
       "trader_npc": "cybil"
+    },
+    {
+      "id": "volcanic_chasm",
+      "name": "Volcanic Chasm",
+      "description": "Smoke emerges from a crack in the side of a mountain.",
+      "tags": [
+        "Volcanic"
+      ],
+      "style": "volcanic",
+      "difficulty": "easy",
+      "size": {
+        "width": 16,
+        "height": 16
+      },
+      "torch_density": 0,
+      "locked_doors": 0.1,
+      "doors": 0.1,
+      "pits": 0.1,
+      "pit_falls": true,
+      "traps": 0.35,
+      "objects": 0.25,
+      "floor_variety": 0,
+      "wall_decor": 0.25,
+      "loot": {
+        "chest_item": "treasure_chest",
+        "chest_frequency": 0.25
+      },
+      "bottom_exit": "opening",
+      "vault_key": "iron_key",
+      "levels": [
+        {
+          "id": "volcanic_chasm_l1",
+          "name": "Level 1",
+          "depth": 1,
+          "size": {
+            "width": 20,
+            "height": 20
+          }
+        },
+        {
+          "id": "volcanic_chasm_l2",
+          "name": "Level 2",
+          "depth": 2,
+          "size": {
+            "width": 16,
+            "height": 12
+          }
+        },
+        {
+          "id": "volcanic_chasm_l3",
+          "name": "Level 3",
+          "depth": 3,
+          "size": {
+            "width": 12,
+            "height": 12
+          },
+          "difficulty": "hard"
+        },
+        {
+          "id": "volcanic_chasm_l4",
+          "name": "Level 4",
+          "depth": 4,
+          "size": {
+            "width": 40,
+            "height": 40
+          },
+          "difficulty": "hard"
+        }
+      ],
+      "trap_types": [
+        {
+          "trap_id": "fire_trap",
+          "weight": 1
+        },
+        {
+          "trap_id": "teleport_trap",
+          "weight": 1
+        }
+      ],
+      "prisoner_npc": "villager_female_noble",
+      "prisoner_reward": "fire_arrows",
+      "theme": "devil"
     }
   ]
 }

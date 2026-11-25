@@ -117,6 +117,9 @@ export type RenderGrid = ReadonlyArray<ReadonlyArray<RenderCell>>;
  *  This is LOGICAL pixels. Cameras zoom by RENDER_SCALE (see
  *  @/util/renderScale), so on the canvas a tile is 64 real px and
  *  sprites may be authored at 64×64 for full detail. */
+/** Shared empty set for "nothing visible yet". */
+const EMPTY_KEYS: ReadonlySet<string> = new Set<string>();
+
 export const TILE_SIZE = 32;
 
 /** Default duration, in milliseconds, of the slide a sprite plays when
@@ -973,6 +976,76 @@ export class WorldRenderer {
       g.strokePath();
       g.setDepth(95);
       this.detectedTrapMarks.set(key, g);
+    }
+  }
+
+  /** Cells the party can see right now (line of sight within sight /
+   *  light range), from the most recent relight. Empty before the
+   *  first relight or when the party isn't on the map. */
+  getCurrentlyVisible(): ReadonlySet<string> {
+    return this.lastLightingResult?.currentlyVisible ?? EMPTY_KEYS;
+  }
+
+  /** "Trap spotted!" — a red ring bursts out from the trap, a "!" pops
+   *  up over it and the red X blinks in. Purely cosmetic; call after
+   *  `setDetectedTraps` has added the cell's marker. */
+  playTrapDetected(col: number, row: number): void {
+    const scene = this.scene;
+    const px = col * TILE_SIZE + TILE_SIZE / 2;
+    const py = row * TILE_SIZE + TILE_SIZE / 2;
+    for (const delay of [0, 180]) {
+      const ring = scene.add.graphics({ x: px, y: py }).setDepth(310);
+      ring.lineStyle(3, 0xff4a3a, 1);
+      ring.strokeCircle(0, 0, TILE_SIZE * 0.45);
+      ring.setScale(0.3).setAlpha(0);
+      scene.tweens.add({
+        targets: ring,
+        delay,
+        scale: 1.9,
+        alpha: { from: 1, to: 0 },
+        duration: 700,
+        ease: "Cubic.easeOut",
+        onComplete: () => ring.destroy(),
+      });
+    }
+    const bang = scene.add
+      .text(px, py - TILE_SIZE * 0.35, "!", {
+        fontFamily: "monospace",
+        fontSize: `${Math.round(TILE_SIZE * 0.7)}px`,
+        fontStyle: "bold",
+        color: "#ff5a40",
+        stroke: "#1a0505",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(311)
+      .setScale(0.2);
+    scene.tweens.add({
+      targets: bang,
+      scale: 1,
+      duration: 220,
+      ease: "Back.easeOut",
+      onComplete: () => {
+        scene.tweens.add({
+          targets: bang,
+          y: bang.y - TILE_SIZE * 0.3,
+          alpha: 0,
+          delay: 650,
+          duration: 450,
+          onComplete: () => bang.destroy(),
+        });
+      },
+    });
+    const mark = this.detectedTrapMarks.get(`${col},${row}`);
+    if (mark) {
+      scene.tweens.add({
+        targets: mark,
+        alpha: { from: 0.15, to: 1 },
+        duration: 160,
+        yoyo: true,
+        repeat: 2,
+        onComplete: () => mark.setAlpha(1),
+      });
     }
   }
 

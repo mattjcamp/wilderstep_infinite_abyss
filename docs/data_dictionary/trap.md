@@ -40,12 +40,13 @@ Legacy boolean trap cells (`trap: true`) and procedural dungeon traps (the `TILE
 | `targets` | `"one"` \| `"all"` | Who gets hit: one random alive member (default) or every alive member. Ignored by `teleport` (the whole party moves). |
 | `save_stat` | string | Ability score for the avoidance save: `"dexterity"`, `"wisdom"`, … When present with `save_dc`, each victim rolls d20 + stat modifier; pass = half damage (rounded down) and no effect. |
 | `save_dc` | number | DC for the save roll. |
+| `detect_dc` | number | DC of the Detect Traps INT save to spot this trap (default 12). |
 | `teleport` | `{ map_id, col, row }` | `teleport` traps only — destination cell. Same map teleports in place; another map traverses like a link. |
 
 ## Behaviour notes
 
 - **One-shot.** A trap fires once and disarms. Triggered overworld traps persist per map in the save (`SavedMapState.triggeredTraps`), so they stay disarmed across reloads and map re-entry. Dungeon traps persist via the dungeon session's `triggeredTraps` (unchanged).
-- **Detection.** Detect Traps reveals armed trap cells (boolean or `trap_id`) within the party's light radius — same overlay as before.
+- **Detection.** While the party's Detect Traps effect is active, an armed trap (boolean or `trap_id`) that enters the party's line of sight triggers an Intelligence save: every living member whose class grants `detect_traps` at their level rolls d20 + INT modifier vs `params.detect_dc` (default 12); any success spots it (red X, pulse animation, `trap_detected` sound, log line). With the effect on but nobody holding the ability, the highest-INT member rolls. A failed trap stays hidden and rolls again the next time it comes back into view. Spotted traps persist per map (`SavedMapState.detectedTraps`; dungeon floors in the session's `detectedTraps`).
 - **Misauthored records** (unknown `trap_id`, missing `damage_range` on a damage trap, bad teleport target) degrade gracefully: the trap fizzles with a log line rather than crashing the step.
 
 ## Cross-references to other models

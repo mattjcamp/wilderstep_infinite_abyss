@@ -10,7 +10,8 @@
  *   - Starting gold
  *   - Torch / Galadriel's Light steps already lit at the start
  *   - Party effects active from the start (abilities flagged
- *     `party_effect: true`)
+ *     `party_effect: true` that someone in the roster has — the same
+ *     rule as the in-game Effects list)
  *
  * In a module that extends another, each field shows whether it is
  * inherited or set here, and fields set here offer "Use inherited" to
@@ -32,6 +33,7 @@ export function PartyAttributesEditor({
   ownKeys,
   hasParent,
   abilities,
+  unlockedAbilityIds,
   onSet,
   onReset,
 }: {
@@ -43,13 +45,21 @@ export function PartyAttributesEditor({
    *  inherited / overridden badges and "Use inherited". */
   hasParent: boolean;
   abilities: ReadonlyArray<PartyAbilityRef>;
+  /** Abilities some roster member has (race, or class at their
+   *  level). Only these can be switched on for a new game. */
+  unlockedAbilityIds: ReadonlySet<string>;
   onSet: (key: string, value: unknown) => void;
   onReset: (key: string) => void;
 }) {
-  const effectAbilities = abilities.filter(
-    (a) => (a as { party_effect?: boolean }).party_effect === true,
-  );
   const activeEffects = new Set(party.party_effects ?? []);
+  // Offer only effects someone in the roster has. One that's already
+  // set without a holder (roster changed) stays listed, flagged, so it
+  // can be switched off.
+  const effectAbilities = abilities.filter(
+    (a) =>
+      (a as { party_effect?: boolean }).party_effect === true &&
+      (unlockedAbilityIds.has(a.id) || activeEffects.has(a.id)),
+  );
 
   const field = (key: string, label: string, body: ReactNode, hint?: ReactNode) => (
     <FieldRow
@@ -125,7 +135,7 @@ export function PartyAttributesEditor({
           "Effects active at start",
           effectAbilities.length === 0 ? (
             <p className="text-xs text-parchment/55">
-              No abilities are flagged as party effects.
+              Nobody in the roster has a party-effect ability.
             </p>
           ) : (
             <div className="flex flex-wrap gap-x-4 gap-y-1">
@@ -148,6 +158,14 @@ export function PartyAttributesEditor({
                     }}
                   />
                   {a.name ?? a.id}
+                  {!unlockedAbilityIds.has(a.id) ? (
+                    <span
+                      className="text-[11px] text-amber-200/90"
+                      title="No one in the roster has this ability, so it won't work in game. Untick it, or add a character who has it."
+                    >
+                      (nobody has this)
+                    </span>
+                  ) : null}
                 </label>
               ))}
             </div>

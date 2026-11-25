@@ -66,7 +66,7 @@ const TOUCH_COMBAT: ShortcutRow[] = [
 
 const TIPS: string[] = [
   "Torches and the Light spell brighten the party's light radius. Effects with a duration count down per step you take — watch the Effects panel on the Party screen.",
-  "Detect Traps reveals nearby trap tiles as red X marks when at least one party member is a Thief (or Ranger Lv 3+) and you can see the tile in your light radius.",
+  "Detect Traps: when a hidden trap comes into view, your Thief (or anyone whose class has Detect Traps) makes an Intelligence save. Pass and the trap is marked with a red X; fail and it stays hidden until it comes back into view.",
   "Boats stay where you leave them. Hop onto a boat to sail; step onto land to disembark.",
   "Talk to NPCs by walking into them. Shops, locked doors, and quest givers all use the same step-to-interact pattern.",
   "Combat uses a dedicated battle screen. Spawn lairs that you defeat are gone for good; placed encounters never respawn either.",

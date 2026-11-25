@@ -656,6 +656,14 @@ import {
   type TrapRecord,
   type TrapVictim,
 } from "@/play/traps";
+import {
+  partyHasDetectTraps,
+  rollTrapDetection,
+  trapDetectDc,
+  trapDetectors,
+  trapsEnteringView,
+  type DetectorClass,
+} from "@/play/trapDetection";
 import { PlayTrapOverlay } from "@/play/TrapOverlay";
 import {
   PlayPrisonerFreedOverlay,
@@ -1442,51 +1450,131 @@ export function PlayHost() {
    *  refreshDetectedTraps to push the right set to the renderer
    *  whenever Detect Traps toggles. */
   const liveTrapsRef = useRef<Set<string>>(new Set());
-  /** Repaint the detected-trap overlay. Pushes an empty set to the
-   *  renderer when Detect Traps isn't active (clears every red X).
-   *  When active, pushes only the cells within the party's current
-   *  light radius — traps far in the dark stay hidden until the
-   *  party walks into range, matching v1's "you can only detect what
-   *  you can see" rule. The radius is the same one
-   *  `partyLightRange` returns (torch / Light spell); baseline
-   *  1-cell vision when the party emits no light is enough that the
-   *  cell the party stands on is always covered. */
-  const refreshDetectedTraps = useCallback(() => {
+  /** `trap_id` of each live trap cell (null = legacy boolean trap →
+   *  default record), for the detection DC lookup. */
+  const liveTrapIdsRef = useRef<Map<string, string | null>>(new Map());
+  /** Traps the party has spotted on this map (Detect Traps save
+   *  passed). Seeded on mount from the save (overworld) or the dungeon
+   *  session (floors); grows as traps are spotted; pruned on trigger. */
+  const knownTrapsRef = useRef<Set<string>>(new Set());
+  /** Live traps that were in the party's line of sight at the last
+   *  check — a trap only rolls again after leaving view and coming
+   *  back. Empty while Detect Traps is off, so switching it on rolls
+   *  for whatever is already in view. */
+  const trapsInViewRef = useRef<Set<string>>(new Set());
+  /** Detect Traps — an Intelligence save rolled when a hidden trap
+   *  enters the party's line of sight (see `@/play/trapDetection`).
+   *  Called from every relight (`visibleNow` = the relight's
+   *  currently-visible cells) and after trap / effect changes (falls
+   *  back to the renderer's last relight). Spotted traps get the red
+   *  X, a pulse animation, the `trap_detected` sound and a log line;
+   *  a failed roll stays silent. Detected Xs stay up for the rest of
+   *  the visit while the effect is on. */
+  const refreshDetectedTraps = useCallback((visibleNow?: ReadonlySet<string>) => {
     const r = rendererRef.current;
     if (!r) return;
     const cur = saveRef.current;
-    const hasDetect = !!cur?.party.party_effects?.includes("detect_traps");
-    if (!hasDetect || liveTrapsRef.current.size === 0) {
+    const cat = catalogRef.current;
+    const detectChars = (cat?.characters ?? []) as Parameters<typeof trapDetectors>[1];
+    const detectClasses = (cat?.classes ?? []) as unknown as ReadonlyArray<DetectorClass>;
+    // The effect only counts when someone in the roster has the ability
+    // (the Party screen hides the toggle otherwise); an id left in
+    // party_effects without a holder does nothing.
+    const hasDetect =
+      !!cur?.party.party_effects?.includes("detect_traps") &&
+      partyHasDetectTraps(cur.party.members, detectChars, detectClasses);
+    if (!cur || !hasDetect || liveTrapsRef.current.size === 0) {
+      trapsInViewRef.current = new Set();
       r.setDetectedTraps(new Set());
       return;
     }
-    const sim = simRef.current;
-    if (!sim) {
-      r.setDetectedTraps(new Set());
-      return;
+    const visible = visibleNow ?? r.getCurrentlyVisible();
+    const known = knownTrapsRef.current;
+    const entering = trapsEnteringView(
+      liveTrapsRef.current,
+      visible,
+      trapsInViewRef.current,
+      known,
+    );
+    const spotted: Array<{ key: string; line: string }> = [];
+    if (entering.length > 0) {
+      const detectors = trapDetectors(cur.party.members, detectChars, detectClasses);
+      for (const key of entering) {
+        const record = resolveTrapRecord(
+          cat?.traps ?? [],
+          liveTrapIdsRef.current.get(key) ?? null,
+        );
+        const res = rollTrapDetection(detectors, trapDetectDc(record));
+        if (!res.detected || !res.best) continue;
+        known.add(key);
+        const b = res.best;
+        spotted.push({
+          key,
+          line:
+            `${b.detector.name} spots a ${record?.name ?? "trap"}! ` +
+            `(INT save ${b.roll}${b.mod >= 0 ? "+" : ""}${b.mod} = ${b.total} vs DC ${b.dc})`,
+        });
+      }
     }
-    const snap = sim.snapshot();
-    // Use 1 as the floor — even with no light source the party can
-    // see the tile they're standing on plus their cardinal
-    // neighbours; matches the lighting helper's implicit baseline.
-    const radius = Math.max(1, snap.lightRange);
-    const px = snap.pos.col;
-    const py = snap.pos.row;
-    const visible = new Set<string>();
-    for (const key of liveTrapsRef.current) {
-      const [cs, rs] = key.split(",");
-      const c = Number.parseInt(cs, 10);
-      const ro = Number.parseInt(rs, 10);
-      if (!Number.isFinite(c) || !Number.isFinite(ro)) continue;
-      // Chebyshev distance — same shape the lighting pool uses
-      // (square aura around the party). Euclidean would round-trip
-      // the corners off; we'd rather match what the player's eyes
-      // see in the lit area.
-      const cheby = Math.max(Math.abs(c - px), Math.abs(ro - py));
-      if (cheby <= radius) visible.add(key);
+    // Remember what's in view for the next "entered view" check.
+    const inView = new Set<string>();
+    for (const key of liveTrapsRef.current) if (visible.has(key)) inView.add(key);
+    trapsInViewRef.current = inView;
+    // Markers: every spotted trap that's still armed.
+    const marks = new Set<string>();
+    for (const key of known) if (liveTrapsRef.current.has(key)) marks.add(key);
+    r.setDetectedTraps(marks);
+    if (spotted.length === 0) return;
+
+    // Persist: dungeon floors in the session, overworld maps in the save.
+    const dState = dungeonStateRef.current;
+    if (dState) {
+      const lvl = peekDungeonSession(dState.instanceId)?.levels[dState.floorIdx];
+      for (const { key } of spotted) lvl?.detectedTraps?.add(key);
+    } else {
+      const mapId = cur.party.currentMapId;
+      const prevMs = cur.maps[mapId] ?? {
+        unlockedCells: [],
+        defeatedEncounters: [],
+        destroyedLairs: [],
+      };
+      const prevKnown = prevMs.detectedTraps ?? [];
+      saveRef.current = {
+        ...cur,
+        maps: {
+          ...cur.maps,
+          [mapId]: {
+            ...prevMs,
+            detectedTraps: [
+              ...prevKnown,
+              ...spotted.map((x) => x.key).filter((k) => !prevKnown.includes(k)),
+            ],
+          },
+        },
+      };
     }
-    r.setDetectedTraps(visible);
+    // Feedback: animation per trap, one sound, a log line each.
+    for (const { key } of spotted) {
+      const [c, ro] = key.split(",").map(Number);
+      try {
+        r.playTrapDetected(c, ro);
+      } catch {
+        /* scene disposed mid-relight — skip */
+      }
+    }
+    try {
+      Sfx.play("trap_detected");
+    } catch {
+      /* audio context not ready — skip */
+    }
+    setLogMessages((prev) => {
+      const next = [...prev, ...spotted.map((x) => x.line)];
+      return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+    });
   }, []);
+  /** Latest refreshDetectedTraps, for the scene's onRelight hook. */
+  const refreshDetectedTrapsRef = useRef(refreshDetectedTraps);
+  refreshDetectedTrapsRef.current = refreshDetectedTraps;
 
   /** Location prefix for the counter-stock key — distinguishes the
    *  same tile coordinates across the overworld vs. each dungeon
@@ -3639,6 +3727,8 @@ export function PlayHost() {
             // corridor reads dim alongside the cell, and so any
             // overlay picks up infravision red when relevant.
             onRelight: (result) => {
+              // Detect Traps: roll for traps that just came into view.
+              refreshDetectedTrapsRef.current(result.currentlyVisible);
               const applyOverlayCellState = (
                 img: Phaser.GameObjects.Image,
                 key: string,
@@ -3762,6 +3852,7 @@ export function PlayHost() {
           // Xs on every armed trap if Detect Traps is currently
           // active (and an empty layer otherwise).
           liveTrapsRef.current = new Set();
+          liveTrapIdsRef.current = new Map();
           for (let r = 0; r < catalog.map.height; r++) {
             for (let c = 0; c < catalog.map.width; c++) {
               const cell = catalog.map.grid[r][c] as
@@ -3769,9 +3860,22 @@ export function PlayHost() {
                 | undefined;
               if (cell?.trap || cell?.trap_id) {
                 liveTrapsRef.current.add(`${c},${r}`);
+                liveTrapIdsRef.current.set(`${c},${r}`, cell.trap_id ?? null);
               }
             }
           }
+          // Traps already spotted on an earlier visit stay spotted.
+          {
+            const dNow = dungeonStateRef.current;
+            const known = dNow
+              ? peekDungeonSession(dNow.instanceId)?.levels[dNow.floorIdx]
+                  ?.detectedTraps
+              : save.maps[catalog.map.id]?.detectedTraps;
+            knownTrapsRef.current = new Set(
+              [...(known ?? [])].filter((k) => liveTrapsRef.current.has(k)),
+            );
+          }
+          trapsInViewRef.current = new Set();
           refreshDetectedTraps();
           // Seed the quest-relevance halo for this map. Quest givers
           // on the freshly-mounted grid glow immediately so the
@@ -5607,6 +5711,8 @@ export function PlayHost() {
               // the disarm into the dungeon session (overworld maps
               // persist via save.maps[..].triggeredTraps below).
               liveTrapsRef.current.delete(key);
+              knownTrapsRef.current.delete(key);
+              trapsInViewRef.current.delete(key);
               const dStateNow = dungeonStateRef.current;
               if (dStateNow) {
                 const session = peekDungeonSession(dStateNow.instanceId);

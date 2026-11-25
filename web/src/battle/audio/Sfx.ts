@@ -2501,6 +2501,17 @@ function genLockPickSuccess(ac: AudioContext, out: AudioNode, t0: number): void 
   tone(ac, out, 200, t0 + freqs.length * 0.07, 0.08, 0.30, "triangle", 0.002, 0.05);
 }
 
+/** Detect Traps — a hidden trap just got spotted. Two sharp, high
+ *  "tink" pings (a glint of wire / a pressure plate's seam) over a
+ *  short low warning sweep, so it reads as "careful!" rather than as
+ *  a reward chime. */
+function genTrapDetected(ac: AudioContext, out: AudioNode, t0: number): void {
+  tone(ac, out, noteHz("E6"), t0, 0.05, 0.16, "square", 0.001, 0.04);
+  tone(ac, out, noteHz("B6"), t0 + 0.09, 0.07, 0.16, "square", 0.001, 0.06);
+  tone(ac, out, noteHz("B7"), t0 + 0.09, 0.05, 0.05, "sine", 0.001, 0.05);
+  sweep(ac, out, 320, 180, t0 + 0.05, 0.28, 0.12, "triangle");
+}
+
 function genEncounter(ac: AudioContext, out: AudioNode, t0: number): void {
   tone(ac, out, 900, t0, 0.06, 0.30, "square", 0.001, 0.03);
   noise(ac, out, t0, 0.08, 0.20, 0.002, 0.05);
@@ -2698,6 +2709,8 @@ const GENERATORS: Record<string, Generator> = {
   turn_undead:        genTurnUndead,
   magic_burst:        genMagicBurst,
   lock_pick_success:  genLockPickSuccess,
+  // Detect Traps — a hidden trap was spotted (INT save succeeded).
+  trap_detected:      genTrapDetected,
   // Encounter-state
   victory:            genVictory,
   defeat:             genDefeat,

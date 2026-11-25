@@ -308,6 +308,12 @@ export interface SavedMapState {
    *  Absent on older saves — treated as empty, so traps fired before
    *  this field shipped re-arm once. */
   triggeredTraps?: ReadonlyArray<string>;
+  /** Traps the party has spotted on this map with Detect Traps (the
+   *  INT save passed) — `"col,row"` keys. Re-applied on map re-entry
+   *  so a spotted trap keeps its red X. (Dungeon floors keep the same
+   *  in the dungeon session's per-level `detectedTraps`.) Absent on
+   *  older saves — treated as empty. */
+  detectedTraps?: ReadonlyArray<string>;
   /** Cells whose authored `item` the party has already collected on
    *  this map — `"col,row"` keys. Populated by both pickup paths
    *  (walk-onto `item_picked` + chest-Open `clearCellItem`) and
