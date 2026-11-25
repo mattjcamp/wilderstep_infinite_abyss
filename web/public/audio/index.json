@@ -2,11 +2,256 @@
   "_comment": "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack; `tags` are editor-only labels (default [\"Ambient\"]) that organize the Soundtrack editor and the soundtrack pickers.",
   "tracks": [
     {
+      "path": "/audio/Action 1 Loop.mp3",
+      "name": "Action 1 Loop",
+      "tags": [
+        "Action"
+      ]
+    },
+    {
+      "path": "/audio/Action 10 Loop.mp3",
+      "name": "Action 10 Loop",
+      "tags": [
+        "Action"
+      ]
+    },
+    {
+      "path": "/audio/Action 2 Loop.mp3",
+      "name": "Action 2 Loop",
+      "tags": [
+        "Action"
+      ]
+    },
+    {
+      "path": "/audio/Action 3 Loop.mp3",
+      "name": "Action 3 Loop",
+      "tags": [
+        "Action"
+      ]
+    },
+    {
+      "path": "/audio/Action 4 Loop.mp3",
+      "name": "Action 4 Loop",
+      "tags": [
+        "Action"
+      ]
+    },
+    {
+      "path": "/audio/Action 5 Loop.mp3",
+      "name": "Action 5 Loop",
+      "tags": [
+        "Action"
+      ]
+    },
+    {
+      "path": "/audio/Action 6 Loop.mp3",
+      "name": "Action 6 Loop",
+      "tags": [
+        "Action"
+      ]
+    },
+    {
+      "path": "/audio/Action 7 Loop.mp3",
+      "name": "Action 7 Loop",
+      "tags": [
+        "Action"
+      ]
+    },
+    {
+      "path": "/audio/Action 8 Loop.mp3",
+      "name": "Action 8 Loop",
+      "tags": [
+        "Action"
+      ]
+    },
+    {
+      "path": "/audio/Action 9 Loop.mp3",
+      "name": "Action 9 Loop",
+      "tags": [
+        "Action"
+      ]
+    },
+    {
       "path": "/audio/All Of My Love.mp3",
       "name": "All Of My Love",
       "gain": 0.059,
       "tags": [
         "Inn"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 1 Loop.mp3",
+      "name": "Ambient 1 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 10 Loop.mp3",
+      "name": "Ambient 10 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 11 Loop.mp3",
+      "name": "Ambient 11 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 12 Loop.mp3",
+      "name": "Ambient 12 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 13 Loop.mp3",
+      "name": "Ambient 13 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 14 Loop.mp3",
+      "name": "Ambient 14 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 15 Loop.mp3",
+      "name": "Ambient 15 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 16 Loop.mp3",
+      "name": "Ambient 16 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 17 Loop.mp3",
+      "name": "Ambient 17 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 18 Loop.mp3",
+      "name": "Ambient 18 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 19 Loop.mp3",
+      "name": "Ambient 19 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 2 Loop.mp3",
+      "name": "Ambient 2 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 20 Loop.mp3",
+      "name": "Ambient 20 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 21 Loop.mp3",
+      "name": "Ambient 21 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 22 Loop.mp3",
+      "name": "Ambient 22 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 23 Loop.mp3",
+      "name": "Ambient 23 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 24 Loop.mp3",
+      "name": "Ambient 24 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 25 Loop.mp3",
+      "name": "Ambient 25 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 3 Loop.mp3",
+      "name": "Ambient 3 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 4 Loop.mp3",
+      "name": "Ambient 4 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 5 Loop.mp3",
+      "name": "Ambient 5 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 6 Loop.mp3",
+      "name": "Ambient 6 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 7 Loop.mp3",
+      "name": "Ambient 7 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 8 Loop.mp3",
+      "name": "Ambient 8 Loop",
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/Ambient 9 Loop.mp3",
+      "name": "Ambient 9 Loop",
+      "tags": [
+        "Ambient"
       ]
     },
     {

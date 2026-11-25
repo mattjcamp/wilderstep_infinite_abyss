@@ -105,8 +105,13 @@ const STYLE_LABELS: Partial<Record<(typeof STYLES)[number], string>> = {
 };
 type Style = (typeof STYLES)[number];
 
-/** Same difficulty enum the Monster model uses. */
-const DIFFICULTIES = ["easy", "normal", "hard", "deadly", "boss"] as const;
+/** The Monster model's difficulty enum, plus "any" (dungeons only —
+ *  ignore monster difficulty when populating the floor). */
+const DIFFICULTIES = ["easy", "normal", "hard", "deadly", "boss", "any"] as const;
+/** Dropdown labels where the raw value needs a hint. */
+const DIFFICULTY_LABELS: Partial<Record<(typeof DIFFICULTIES)[number], string>> = {
+  any: "any (ignore monster difficulty)",
+};
 type Difficulty = (typeof DIFFICULTIES)[number];
 
 /** Encounter themes (matching the `theme` field on monsters /
@@ -1354,7 +1359,7 @@ function GeneratorFields({
             ) : null}
             {DIFFICULTIES.map((d) => (
               <option key={d} value={d}>
-                {d}
+                {DIFFICULTY_LABELS[d] ?? d}
               </option>
             ))}
             {difficulty &&

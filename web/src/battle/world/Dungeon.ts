@@ -112,7 +112,11 @@ export function normalizeDungeonStyle(v: unknown): DungeonStyle {
   return v === "cavern" || v === "deep_ones_hall" || v === "manor" || v === "volcanic" ? v : "dungeon";
 }
 
-export type Difficulty = "easy" | "normal" | "hard" | "deadly" | "boss";
+/** Dungeon difficulty tier. `"any"` ignores monster difficulty when
+ *  populating the floor: encounters from every level (1–8) and monsters
+ *  of every tier are eligible; the layout (rooms, fight chance) is the
+ *  same as `"normal"`. Monsters themselves never use `"any"`. */
+export type Difficulty = "easy" | "normal" | "hard" | "deadly" | "boss" | "any";
 export type LevelSize = "small" | "medium" | "large";
 export type TorchDensity = "none" | "sparse" | "moderate" | "abundant";
 
@@ -138,7 +142,17 @@ const DIFFICULTY_PROFILES: Record<Difficulty, DifficultyProfile> = {
   // is high enough that nearly every non-entrance room delivers a
   // fight. Use via a per-Level override, not as a parent default.
   boss:   { minRooms: 5,  maxRooms: 8,  encMin: 7, encMax: 8, encChance: 0.90 },
+  // Ignore difficulty when populating monsters: the whole encounter
+  // level range, no per-monster tier filter (see `monsterTierFilter`).
+  // Layout matches "normal".
+  any:    { minRooms: 6,  maxRooms: 10, encMin: 1, encMax: 8, encChance: 0.50 },
 };
+
+/** Monster tiers a floor of this difficulty accepts — exactly its own
+ *  tier, or undefined (no filter) for `"any"`. */
+function monsterTierFilter(difficulty: Difficulty): ReadonlySet<string> | undefined {
+  return difficulty === "any" ? undefined : new Set([difficulty]);
+}
 
 /**
  * Resolve the difficulty profile for a tier. The tier alone decides
@@ -1444,10 +1458,11 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
       my += randInt(rng, -1, 1);
       if (getTile(grid, mx, my) !== floorTile) continue;
       // Strict per-monster difficulty match — a "normal" dungeon
-      // only accepts monsters tagged "normal". The level-band filter
-      // above is kept (it shapes the candidate encounter pool) but
-      // the per-monster tier is what the user actually sees.
-      const allowedDifficulties: ReadonlySet<string> = new Set([opts.difficulty]);
+      // only accepts monsters tagged "normal" ("any" accepts every
+      // tier). The level-band filter above is kept (it shapes the
+      // candidate encounter pool) but the per-monster tier is what the
+      // user actually sees.
+      const allowedDifficulties = monsterTierFilter(opts.difficulty);
       const enc = sampleEncounter(opts.encounters, opts.encounterArea ?? "dungeon", {
         minLevel: profile.encMin,
         maxLevel: profile.encMax,
@@ -1802,7 +1817,7 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
         minLevel: profile.encMin,
         maxLevel: profile.encMax,
         rng: hookRng,
-        allowedDifficulties: new Set([opts.difficulty]),
+        allowedDifficulties: monsterTierFilter(opts.difficulty),
         monsterDifficulty: opts.monsterDifficulty,
         theme: opts.encounterTheme,
       });
