@@ -330,6 +330,9 @@ export const STYLE_DEFAULTS: Record<
   // Furnished rooms: a different floor in most rooms, tapestries and
   // windows on the walls, columns and potted plants about.
   manor: { objects: 0.2, floor_variety: 0.7, wall_decor: 0.4, loops: 0.35, room_roles: 0.5 },
+  // Lava tubes: patchy ash / cinder / crust floors, glowing cracks and
+  // fire vents on the walls, obsidian spires about.
+  volcanic: { objects: 0.4, floor_variety: 0.6, wall_decor: 0.35, loops: 0.35, room_roles: 0.4 },
 };
 
 /** Smallest / largest floor the generator will build. Below the

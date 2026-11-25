@@ -194,12 +194,13 @@ const ARTIFACT_PROTO = proto({
  *  across a chasm). The converter's pit pass swaps in the right rim
  *  piece per cell; `paletteId` here is the solid-centre fallback. */
 /** Palette-id prefix of each style's tileset. */
-export type TilesetPrefix = "dungeon" | "cave" | "deep_ones_hall" | "manor";
+export type TilesetPrefix = "dungeon" | "cave" | "deep_ones_hall" | "manor" | "volcanic";
 export function tilesetPrefix(style: DungeonStyle): TilesetPrefix {
   return style === "cavern" ? "cave"
     : style === "deep_ones_hall" ? "deep_ones_hall"
       : style === "manor" ? "manor"
-        : "dungeon";
+        : style === "volcanic" ? "volcanic"
+          : "dungeon";
 }
 
 function pitProto(prefix: TilesetPrefix): DungeonTilePrototype {
@@ -208,7 +209,8 @@ function pitProto(prefix: TilesetPrefix): DungeonTilePrototype {
     name: prefix === "cave" ? "Cave Chasm"
       : prefix === "deep_ones_hall" ? "Deep Ones Hall Abyss"
         : prefix === "manor" ? "Manor Pit"
-          : "Dungeon Pit",
+          : prefix === "volcanic" ? "Lava Chasm"
+            : "Dungeon Pit",
     walkable: false,
     obstructs: false,
     pit: true,
@@ -219,6 +221,7 @@ const DT_PIT_PROTO = pitProto("dungeon");
 const CV_PIT_PROTO = pitProto("cave");
 const DH_PIT_PROTO = pitProto("deep_ones_hall");
 const MN_PIT_PROTO = pitProto("manor");
+const VT_PIT_PROTO = pitProto("volcanic");
 
 /** Room objects. Pillars and stalagmites are tall — they block sight
  *  like a column; rubble and the throne are low. */
@@ -239,6 +242,10 @@ const DH_THRONE_PROTO = objectProto("deep_ones_hall_throne", "Deep Ones Hall Thr
 const MN_PILLAR_PROTO = objectProto("manor_column", "Manor Column", true);
 const MN_RUBBLE_PROTO = objectProto("manor_potted_plant", "Manor Potted Plant", false);
 const MN_THRONE_PROTO = objectProto("manor_grand_chair", "Manor Grand Chair", false);
+// Volcanic tubes: obsidian spires stand tall like stalagmites.
+const VT_SPIRE_PROTO = objectProto("volcanic_obsidian_spire", "Obsidian Spire", true);
+const VT_RUBBLE_PROTO = objectProto("volcanic_rubble", "Volcanic Rubble", false);
+const VT_THRONE_PROTO = objectProto("volcanic_throne", "Obsidian Throne", false);
 
 const WALL_TORCH_PROTO = proto({
   id: "wall_torch",
@@ -485,6 +492,66 @@ function manorProto(tileId: number): DungeonTilePrototype | null {
   return null;
 }
 
+/** ── Volcanic Tubes style ("volcanic") ─────────────────────────
+ *  Carved like "cavern" (winding lava tubes), painted with the
+ *  Volcanic Tubes tileset: ash floor (the converter mixes in cinder /
+ *  basalt / glowing-crust patches), basalt walls autotiled from the
+ *  generic "volcanic_wall", scorched iron doors and lava chasms. Solid
+ *  rock is `volcanic_pit_centre` (dark basalt); chasm interiors use
+ *  `volcanic_pit_fill` (lava) — see the converter's pit pass. */
+export const VOLCANIC_FLOOR_ID = "volcanic_floor_ash";
+
+const VT_FLOOR_PROTO = proto({ id: VOLCANIC_FLOOR_ID, name: "Volcanic Floor, Ash", paletteId: VOLCANIC_FLOOR_ID });
+const VT_WALL_PROTO = proto({
+  id: "volcanic_wall",
+  name: "Volcanic Wall",
+  walkable: false,
+  obstructs: true,
+  paletteId: "volcanic_wall_top",
+});
+const VT_STAIRS_UP_PROTO = proto({ id: "stairs_up", name: "Volcanic Steps, Up", paletteId: "volcanic_stairs_up" });
+const VT_STAIRS_DOWN_PROTO = proto({ id: "stairs_down", name: "Volcanic Steps, Down", paletteId: "volcanic_stairs" });
+const VT_DOOR_PROTO = proto({ id: "volcanic_door", name: "Volcanic Door", paletteId: "volcanic_door" });
+const VT_LOCKED_DOOR_PROTO = proto({
+  id: "door_locked",
+  name: "Locked Door",
+  walkable: false,
+  obstructs: false,
+  locked: true,
+  paletteId: "volcanic_door",
+});
+const VT_WALL_TORCH_PROTO = proto({ ...WALL_TORCH_PROTO, paletteId: "volcanic_wall_top" });
+
+function volcanicProto(tileId: number): DungeonTilePrototype | null {
+  switch (tileId) {
+    case TILE_DFLOOR:
+      return VT_FLOOR_PROTO;
+    case TILE_DWALL:
+      return VT_WALL_PROTO;
+    case TILE_STAIRS:
+      return VT_STAIRS_UP_PROTO;
+    case TILE_STAIRS_DOWN:
+      return VT_STAIRS_DOWN_PROTO;
+    case TILE_DDOOR:
+      return VT_DOOR_PROTO;
+    case TILE_LOCKED_DOOR:
+      return VT_LOCKED_DOOR_PROTO;
+    case TILE_WALL_TORCH:
+      return VT_WALL_TORCH_PROTO;
+    case TILE_TRAP:
+      return { ...TRAP_PROTO, paletteId: VOLCANIC_FLOOR_ID };
+    case TILE_PIT:
+      return VT_PIT_PROTO;
+    case TILE_PILLAR:
+      return VT_SPIRE_PROTO;
+    case TILE_RUBBLE:
+      return VT_RUBBLE_PROTO;
+    case TILE_THRONE:
+      return VT_THRONE_PROTO;
+  }
+  return null;
+}
+
 function dungeonTilesetProto(tileId: number): DungeonTilePrototype | null {
   switch (tileId) {
     case TILE_DFLOOR:
@@ -532,7 +599,9 @@ export function prototypeForTileId(
         ? deepOnesHallProto(tileId)
         : style === "manor"
           ? manorProto(tileId)
-          : dungeonTilesetProto(tileId);
+          : style === "volcanic"
+            ? volcanicProto(tileId)
+            : dungeonTilesetProto(tileId);
   if (p) return p;
   switch (tileId) {
     case TILE_CHEST:
@@ -662,6 +731,30 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "manor_column",
   "manor_potted_plant",
   "manor_grand_chair",
+  // Volcanic Tubes style.
+  VOLCANIC_FLOOR_ID,
+  "volcanic_floor_cinders",
+  "volcanic_floor_basalt",
+  "volcanic_floor_lava_cracks",
+  "volcanic_floor_embers",
+  "volcanic_floor_slab",
+  "volcanic_floor_obsidian",
+  "volcanic_stairs_up",
+  "volcanic_stairs",
+  "volcanic_ladder_up",
+  "volcanic_door",
+  "volcanic_wall_top",
+  "volcanic_wall_left",
+  "volcanic_wall_right",
+  "volcanic_wall_corner_tl",
+  "volcanic_wall_corner_tr",
+  "volcanic_wall_magma_crack",
+  "volcanic_wall_fire_vent",
+  "volcanic_wall_lava_seep",
+  "volcanic_obsidian_spire",
+  "volcanic_rubble",
+  "volcanic_throne",
+  "volcanic_pit_fill",
   // Room furnishings (room-roles pass) — shared art for every style.
   ...PROP_PALETTE_IDS,
   // The bottom floor's way out — each tileset's wall opening.
@@ -669,11 +762,13 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "cave_wall_exit",
   "deep_ones_hall_wall_exit",
   "manor_wall_exit",
+  "volcanic_wall_exit",
   // Pit rims — every piece the pit pass can pick, both tilesets.
   ...PIT_PIECES.map((p) => `dungeon_${p}`),
   ...PIT_PIECES.map((p) => `cave_${p}`),
   ...PIT_PIECES.map((p) => `deep_ones_hall_${p}`),
   ...PIT_PIECES.map((p) => `manor_${p}`),
+  ...PIT_PIECES.map((p) => `volcanic_${p}`),
 ];
 
 /** Palette id → sprite lookup for a prototype's `paletteId`. Returns

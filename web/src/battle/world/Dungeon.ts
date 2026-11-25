@@ -97,17 +97,19 @@ const WALL_TILES: ReadonlySet<number> = new Set([TILE_DWALL]);
  *   - `"deep_ones_hall"` — rooms-and-corridors like "dungeon" (built,
  *     not roughened), painted with the Deep Ones Hall tileset.
  *   - `"manor"` — rooms-and-corridors like "dungeon", painted with the
- *     Manor tileset. */
-export type DungeonStyle = "dungeon" | "cavern" | "deep_ones_hall" | "manor";
+ *     Manor tileset.
+ *   - `"volcanic"` — roughened like "cavern" (winding lava tubes),
+ *     painted with the Volcanic Tubes tileset. */
+export type DungeonStyle = "dungeon" | "cavern" | "deep_ones_hall" | "manor" | "volcanic";
 
 /** Every supported style, in editor display order. */
-export const DUNGEON_STYLES: readonly DungeonStyle[] = ["dungeon", "cavern", "deep_ones_hall", "manor"];
+export const DUNGEON_STYLES: readonly DungeonStyle[] = ["dungeon", "cavern", "deep_ones_hall", "manor", "volcanic"];
 
 /** Narrow an on-disk style value to a supported style. Anything else —
  *  including the retired legacy styles ("caves", "ruins", "forest",
  *  "custom") — falls back to `"dungeon"`. */
 export function normalizeDungeonStyle(v: unknown): DungeonStyle {
-  return v === "cavern" || v === "deep_ones_hall" || v === "manor" ? v : "dungeon";
+  return v === "cavern" || v === "deep_ones_hall" || v === "manor" || v === "volcanic" ? v : "dungeon";
 }
 
 export type Difficulty = "easy" | "normal" | "hard" | "deadly" | "boss";
@@ -1617,7 +1619,7 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
   placeDecorations(grid, rooms, opts.torchProbability, floorTile, rng);
 
   // ── Cavern post-process: rough, irregular rock walls ──
-  if (style === "cavern") roughenCavern(grid, rng);
+  if (style === "cavern" || style === "volcanic") roughenCavern(grid, rng);
 
   // ── Bottom floor's way out ──
   // A broken opening in a wall with daylight beyond: a TILE_STAIRS cell

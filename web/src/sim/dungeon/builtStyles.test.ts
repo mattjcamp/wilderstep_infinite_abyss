@@ -1,6 +1,6 @@
 /**
- * The tileset styles added on top of Dungeon / Cave — "deep_ones_hall"
- * and "manor": generated floors are painted entirely from their own
+ * The tileset styles added on top of Dungeon / Cave — "deep_ones_hall",
+ * "manor" and "volcanic": generated floors are painted entirely from their own
  * tileset in the Default palette, with the dressing actually showing.
  */
 import { PROP_INFO } from "./roomProps";
@@ -65,6 +65,19 @@ const CASES: Array<{ style: DungeonStyle; prefix: string; folder: string; mustSe
       "features/grand_chair.png", "features/column.png",
     ],
   },
+  {
+    style: "volcanic",
+    prefix: "volcanic",
+    folder: "dungeons/volcanic_tubes/",
+    mustSee: [
+      "walls/wall_top.png", "walls/wall_left.png", "walls/wall_right.png", "walls/wall_magma_crack.png",
+      "floors/floor_ash.png", "floors/floor_cinders.png", "floors/floor_lava_cracks.png",
+      // Solid rock is basalt; chasm interiors are lava.
+      "lava/solid_rock.png", "lava/lava_chasm_centre.png",
+      "doors_and_stairs/stairs_up.png", "doors_and_stairs/stairs.png", "walls/wall_exit.png",
+      "features/throne.png", "features/obsidian_spire.png",
+    ],
+  },
 ];
 
 describe.each(CASES)("$style dungeon style", ({ style, prefix, folder, mustSee }) => {
@@ -100,5 +113,28 @@ describe.each(CASES)("$style dungeon style", ({ style, prefix, folder, mustSee }
       }
     }
     for (const piece of mustSee) expect(seen.has(piece), piece).toBe(true);
+  });
+});
+
+describe("volcanic chasms", () => {
+  it("fill chasm interiors with lava but keep solid rock as basalt", () => {
+    let lavaInPit = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      for (const map of generate("volcanic", seed)) {
+        for (const row of map.grid) {
+          for (const cell of row) {
+            if (cell.id === "volcanic_pit_centre" && cell.walkable === false && !cell.pit) {
+              // Wall-backed solid rock (autotile "rock" piece).
+              expect(cell.sprite).toBe("dungeons/volcanic_tubes/lava/solid_rock.png");
+            }
+            if (cell.pit && cell.id === "volcanic_pit_centre") {
+              expect(cell.sprite).toBe("dungeons/volcanic_tubes/lava/lava_chasm_centre.png");
+              lavaInPit++;
+            }
+          }
+        }
+      }
+    }
+    expect(lavaInPit).toBeGreaterThan(0);
   });
 });

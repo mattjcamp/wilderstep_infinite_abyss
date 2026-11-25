@@ -18,7 +18,8 @@
         {
           "id": "hidden_grotto_l1",
           "name": "Level 1",
-          "depth": 1
+          "depth": 1,
+          "style": "volcanic"
         },
         {
           "id": "hidden_grotto_l2",
@@ -73,7 +74,8 @@
         {
           "id": "stone_halls_l1",
           "name": "Level 1",
-          "depth": 1
+          "depth": 1,
+          "style": "cavern"
         },
         {
           "id": "stone_halls_l2",

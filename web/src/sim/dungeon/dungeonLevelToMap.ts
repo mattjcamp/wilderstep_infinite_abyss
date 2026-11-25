@@ -43,6 +43,7 @@ import {
   CAVE_TILESET_FLOOR_ID,
   DEEP_ONES_HALL_FLOOR_ID,
   MANOR_FLOOR_ID,
+  VOLCANIC_FLOOR_ID,
   PIT_PIECES,
   resolveDungeonSprite,
   tilesetPrefix,
@@ -435,7 +436,11 @@ function paintPits(
   // Ids are only renamed after the scan, so every pit still reads as
   // the generic `${prefix}_pit` here.
   const isPit = (r: number, c: number) => grid[r]?.[c]?.id === pitId;
-  const centre = resolveDungeonSprite(`${prefix}_pit_centre`, sprites);
+  // `pit_centre` doubles as the tileset's solid rock. A tileset whose
+  // chasms hold something else (volcanic lava) supplies `pit_fill` for
+  // the interior; others fall back to the centre.
+  const fill = resolveDungeonSprite(`${prefix}_pit_fill`, sprites);
+  const centre = fill || resolveDungeonSprite(`${prefix}_pit_centre`, sprites);
   const pieces: Array<[number, number, string]> = [];
   for (let r = 0; r < grid.length; r++) {
     for (let c = 0; c < grid[r].length; c++) {
@@ -464,11 +469,19 @@ function paintPits(
     const paletteId = `${prefix}_${piece}`;
     cell.id = paletteId;
     cell.paletteId = paletteId;
-    cell.sprite = resolveDungeonSprite(paletteId, sprites) || centre;
+    cell.sprite =
+      piece === "pit_centre"
+        ? centre
+        : resolveDungeonSprite(paletteId, sprites) || centre;
     // Rim pieces are transparent inside the lip — the black centre
     // shows through as the drop.
     if (piece !== "pit_centre" && centre) cell.background_sprite = centre;
     else delete cell.background_sprite;
+    // A filled chasm (molten lava) lights the tube around it.
+    if (fill) {
+      cell.light_source = true;
+      cell.light_range = 2;
+    }
   }
 }
 
@@ -530,6 +543,16 @@ const DEEP_ONES_HALL_ROOM_FLOORS: Array<[string, number]> = [
   ["deep_ones_hall_floor_grate", 1],
 ];
 /** Room floors for the Manor: a different finish in most rooms. */
+/** Volcanic tube patches over the ash: cinders and basalt mostly,
+ *  glowing crust and embers now and then, the odd obsidian sheet. */
+const VOLCANIC_PATCH_FLOORS: Array<[string, number]> = [
+  ["volcanic_floor_cinders", 3],
+  ["volcanic_floor_basalt", 3],
+  ["volcanic_floor_embers", 2],
+  ["volcanic_floor_lava_cracks", 1],
+  ["volcanic_floor_slab", 1],
+  ["volcanic_floor_obsidian", 1],
+];
 const MANOR_ROOM_FLOORS: Array<[string, number]> = [
   ["manor_floor_parquet", 3],
   ["manor_floor_herringbone", 2],
@@ -544,6 +567,7 @@ const TILESET_LABEL: Record<TilesetPrefix, string> = {
   cave: "Cave",
   deep_ones_hall: "Deep Ones Hall",
   manor: "Manor",
+  volcanic: "Volcanic Tubes",
 };
 /** Wall-face decorations per tileset — [palette id, weight, glows]. */
 /** Palette id of a tileset's wall opening — the bottom floor's way
@@ -571,6 +595,12 @@ const WALL_DECOR: Record<TilesetPrefix, Array<[string, number, boolean]>> = {
   manor: [
     ["manor_wall_tapestry", 2, false],
     ["manor_wall_window", 1, false],
+  ],
+  // Molten cracks, fire vents and lava seeps — all of them glow.
+  volcanic: [
+    ["volcanic_wall_magma_crack", 3, true],
+    ["volcanic_wall_fire_vent", 1, true],
+    ["volcanic_wall_lava_seep", 1, true],
   ],
 };
 
@@ -607,10 +637,12 @@ function applyTilesetStyle(
   where: { dungeonId: string; floorIdx: number },
 ): void {
   const seed = `${where.dungeonId}:${where.floorIdx}`;
-  const cave = style === "cavern";
+  // Cave-carved styles get soft floor patches instead of room floors.
+  const cave = style === "cavern" || style === "volcanic";
   const prefix = tilesetPrefix(style);
   const baseFloorId =
-    cave ? CAVE_TILESET_FLOOR_ID
+    style === "cavern" ? CAVE_TILESET_FLOOR_ID
+      : prefix === "volcanic" ? VOLCANIC_FLOOR_ID
       : prefix === "deep_ones_hall" ? DEEP_ONES_HALL_FLOOR_ID
         : prefix === "manor" ? MANOR_FLOOR_ID
           : DUNGEON_TILESET_FLOOR_ID;
@@ -637,7 +669,8 @@ function applyTilesetStyle(
       if (n < 1 - variety) return baseFloorId;
       // A second, coarser noise field picks WHICH patch floor, so each
       // patch is one material with soft edges rather than a speckle.
-      return weighted(CAVE_PATCH_FLOORS, patchNoise(seed + ":kind", c, r, 7))[0];
+      const patches = prefix === "volcanic" ? VOLCANIC_PATCH_FLOORS : CAVE_PATCH_FLOORS;
+      return weighted(patches, patchNoise(seed + ":kind", c, r, 7))[0];
     }
     const rooms = level.rooms ?? [];
     for (let i = rooms.length - 1; i >= 0; i--) {

@@ -54,7 +54,7 @@ type Piece =
   | "cornerTl" | "cornerTr" | "tDown" | "tUp" | "rock";
 
 /** Tilesets the autotiler can paint with (palette-id prefixes). */
-export type WallTileset = "dungeon" | "cave" | "deep_ones_hall" | "manor";
+export type WallTileset = "dungeon" | "cave" | "deep_ones_hall" | "manor" | "volcanic";
 
 /** Palette ids for one tileset's wall pieces. The tilesets share piece
  *  names under their own prefix (`dungeon_wall_top` / `cave_wall_top`,
@@ -99,6 +99,7 @@ const TILESET_NAMES: Record<WallTileset, string> = {
   cave: "Cave",
   deep_ones_hall: "Deep Ones Hall",
   manor: "Manor",
+  volcanic: "Volcanic Tubes",
 };
 
 const STRIPS: ReadonlySet<Piece> = new Set(["left", "right", "divider"]);

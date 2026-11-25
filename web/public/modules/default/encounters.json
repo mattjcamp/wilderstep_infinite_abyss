@@ -971,7 +971,7 @@
       "name": "Werewolf",
       "description": "A howl answers your torchlight. Something among the wolves walks upright.",
       "area": "dungeon",
-      "theme": "animal",
+      "theme": "cryptid",
       "tags": [
         "Lycanthropes"
       ],

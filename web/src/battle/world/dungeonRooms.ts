@@ -88,6 +88,9 @@ export const ROLES_BY_STYLE: Record<string, Array<[RoomRole, number]>> = {
   deep_ones_hall: [
     ["shrine", 3], ["crypt", 2], ["library", 2], ["storeroom", 1], ["guard_post", 1], ["vault", 1],
   ],
+  volcanic: [
+    ["camp", 2], ["shrine", 2], ["storeroom", 1], ["crypt", 1], ["vault", 1],
+  ],
   manor: [
     ["parlour", 3], ["library", 2], ["mess_hall", 2], ["storeroom", 1], ["shrine", 1], ["vault", 1],
   ],
