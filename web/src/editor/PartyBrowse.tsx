@@ -10,8 +10,8 @@
  * remove controls for characters and the inventory pane gets add /
  * remove / quantity controls for the shared stash. Roster cards can
  * still be dragged to reorder. Below it, <PartyAttributesEditor> covers
- * the rest of the singleton (start position, avatar, gold, light
- * steps, starting party effects). The raw JSON <ModelView> stays one
+ * the rest of the singleton (avatar, gold, light steps, starting
+ * party effects; the start position lives in Module Properties). The raw JSON <ModelView> stays one
  * click away behind "Edit JSON".
  *
  * Persistence: every edit patches the module's OWN party file (not the
@@ -30,11 +30,7 @@ import { loadDraft, saveDraft } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
 import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import { ModelView } from "./ModelView";
-import {
-  PartyAttributesEditor,
-  type PartyMapRef,
-} from "./PartyAttributesEditor";
-import { effectiveTagOrder } from "./mapTags";
+import { PartyAttributesEditor } from "./PartyAttributesEditor";
 import {
   PartyScreen,
   type PartyAbilityRef,
@@ -61,9 +57,6 @@ type LoadState =
       abilities: PartyAbilityRef[];
       items: PartyItemRef[];
       spells: PartySpellRef[];
-      maps: PartyMapRef[];
-      /** maps.json tag order — orders the start-map picker's groups. */
-      mapTagOrder: string[];
     }
   | { kind: "error"; message: string };
 
@@ -210,7 +203,6 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
           abilitiesLayers,
           itemsLayers,
           spellsLayers,
-          mapsLayers,
         ] = await Promise.all([
           src.loadModelLayers(moduleId, "party"),
           src.loadModelLayers(moduleId, "characters"),
@@ -219,7 +211,6 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
           src.loadModelLayers(moduleId, "abilities"),
           src.loadModelLayers(moduleId, "items"),
           src.loadModelLayers(moduleId, "spells"),
-          src.loadModelLayers(moduleId, "maps"),
         ]);
         if (cancelled) return;
 
@@ -241,18 +232,6 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
             unknown
           > | null)?.[key] as T[] | undefined) ?? [];
 
-        const maps = list<PartyMapRef>("maps", mapsLayers).map((m) => ({
-          id: m.id,
-          name: m.name,
-          tags: m.tags,
-          width: m.width,
-          height: m.height,
-          description: m.description,
-        }));
-        const mapTagOrder = effectiveTagOrder(
-          mergeModel("maps", mapsLayers.inherited, mapsLayers.ownFile),
-        );
-
         setState({
           kind: "ok",
           inherited,
@@ -263,8 +242,6 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
           abilities: list<PartyAbilityRef>("abilities", abilitiesLayers),
           items: list<PartyItemRef>("items", itemsLayers),
           spells: list<PartySpellRef>("spells", spellsLayers),
-          maps,
-          mapTagOrder,
         });
         setActiveEffectIds(
           effectiveParty(inherited, own).party_effects ?? [],
@@ -349,8 +326,6 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
               party={party!}
               ownKeys={ownKeys}
               hasParent={state.inherited !== null}
-              maps={state.maps}
-              mapTagOrder={state.mapTagOrder}
               abilities={state.abilities}
               onSet={onSetAttribute}
               onReset={onResetAttribute}

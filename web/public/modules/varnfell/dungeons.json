@@ -4,7 +4,9 @@
       "id": "hidden_grotto",
       "name": "Hidden Grotto",
       "description": "An old forgotten grotto hidden deep in the mountain",
-      "tags": [],
+      "tags": [
+        "Natural Caves"
+      ],
       "style": "cavern",
       "difficulty": "normal",
       "size": {
@@ -88,7 +90,9 @@
       "id": "deep_caves",
       "name": "Deep Caves",
       "description": "An entrance to what looks like a deep network of caves",
-      "tags": [],
+      "tags": [
+        "Natural Caves"
+      ],
       "style": "cavern",
       "difficulty": "normal",
       "size": {
@@ -239,7 +243,9 @@
       "id": "small_cave",
       "name": "Small Cave",
       "description": "A tiny hole that you can just barely squeeze through leads to some kind of cave network",
-      "tags": [],
+      "tags": [
+        "Natural Caves"
+      ],
       "style": "cavern",
       "difficulty": "easy",
       "size": {

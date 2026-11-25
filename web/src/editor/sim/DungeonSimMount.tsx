@@ -20,6 +20,13 @@
  * Exiting via the entrance stairs on floor 0 (or via stairs-down on
  * the bottom floor of a multi-floor dungeon) emits a separate
  * "exit" link target which we render as a return-to-picker prompt.
+ *
+ * Viewport: the canvas is a fixed-size window (not the whole floor),
+ * and the camera follows the party with the same per-axis rules as the
+ * play screen — an axis the floor fits in is centered, an overflowing
+ * axis tracks the party clamped to the edges. Drag to look around
+ * (the next step snaps back to the party), scroll or −/+ to zoom.
+ * Arrow keys / Space don't scroll the page while the sim has them.
  */
 
 import { editorMapHref } from "../moduleRoutes";
@@ -96,7 +103,29 @@ interface Props {
    *  `partyInfravisionActive` flag. Defaults to false — infravision
    *  is opt-in, matching torches and other party-light effects. */
   infravisionActive?: boolean;
+  /** When false, fog of war is off: every cell renders as explored
+   *  (lighting still applies). Defaults to true. */
+  fogOfWar?: boolean;
 }
+
+/** Zoom steps, as multiples of the standard on-screen tile size
+ *  (NATIVE_TILE_CSS_PX). */
+const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.5, 2] as const;
+const DEFAULT_ZOOM_IDX = 3;
+/** CSS px per backbuffer px — tiles show at NATIVE_TILE_CSS_PX at 100%. */
+const DISPLAY_SCALE = NATIVE_TILE_CSS_PX / (TILE_SIZE * RENDER_SCALE);
+/** Keys the sim consumes that would otherwise scroll the page. */
+const PAGE_SCROLL_KEYS = new Set([
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  " ",
+  "PageUp",
+  "PageDown",
+  "Home",
+  "End",
+]);
 
 export function DungeonSimMount({
   moduleId,
@@ -106,8 +135,25 @@ export function DungeonSimMount({
   returnTo,
   darkness = true,
   infravisionActive = false,
+  fogOfWar = true,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  /** Zoom step index (ZOOM_STEPS). Mirrored into a ref so a floor
+   *  change remounts the game at the current zoom. */
+  const [zoomIdx, setZoomIdx] = useState(DEFAULT_ZOOM_IDX);
+  const zoomIdxRef = useRef(zoomIdx);
+  zoomIdxRef.current = zoomIdx;
+  /** True while the camera is following the party (false after a
+   *  look-around drag until the party moves or Center is pressed). */
+  const [following, setFollowing] = useState(true);
+  const fogRef = useRef(fogOfWar);
+  fogRef.current = fogOfWar;
+  const followingRef = useRef<(on: boolean) => void>(() => {});
+  followingRef.current = setFollowing;
+  const zoomBy = (dir: 1 | -1) =>
+    setZoomIdx((i) => Math.min(ZOOM_STEPS.length - 1, Math.max(0, i + dir)));
+  const zoomByRef = useRef(zoomBy);
+  zoomByRef.current = zoomBy;
   const router = useRouter();
   const [floorIdx, setFloorIdx] = useState(initialFloorIdx);
   const [exited, setExited] = useState(false);
@@ -171,6 +217,10 @@ export function DungeonSimMount({
   const sceneRef = useRef<{
     setLightingMode: (m: "day" | "night") => void;
     setPartyInfravisionActive: (active: boolean) => void;
+    setFogEnabled: (enabled: boolean) => void;
+    setWorldZoom: (zoom: number) => void;
+    centerOnParty: () => void;
+    resizeView: (cssW: number, cssH: number) => void;
   } | null>(null);
   /** Active MapSimulation. Exposed so the launcher's Infravision
    *  checkbox (or any future prop sync) can call
@@ -391,8 +441,13 @@ export function DungeonSimMount({
         if (m.sprite) spriteKeys.add(m.sprite);
       }
 
-      const width = floorRecord.width * TILE_SIZE;
-      const height = floorRecord.height * TILE_SIZE;
+      const mapPixelWidth = floorRecord.width * TILE_SIZE;
+      const mapPixelHeight = floorRecord.height * TILE_SIZE;
+      const host = containerRef.current;
+      const viewCss = {
+        w: Math.max(240, host.clientWidth),
+        h: Math.max(240, host.clientHeight),
+      };
 
       class DungeonScene extends Phaser.Scene {
         /** Shared world renderer — owns cells, party sprite, roamers,
@@ -410,6 +465,63 @@ export function DungeonSimMount({
           string,
           Phaser.GameObjects.Image
         > = new Map();
+        /** Camera follows the party unless the author dragged away. */
+        follow = true;
+        lastWheelAt = 0;
+        /** Active look-around drag (pointer + camera scroll at start). */
+        drag: { x: number; y: number; sx: number; sy: number } | null = null;
+
+        /** Visible world size (logical px) at the current zoom. */
+        viewSize(): { viewW: number; viewH: number } {
+          const cam = this.cameras.main;
+          return {
+            viewW: this.scale.width / cam.zoom,
+            viewH: this.scale.height / cam.zoom,
+          };
+        }
+
+        /** Per-axis clamp: an axis the floor fits in stays centered;
+         *  an overflowing axis clamps to the floor's edges. */
+        clampScroll(x: number, y: number): { x: number; y: number } {
+          const { viewW, viewH } = this.viewSize();
+          return {
+            x:
+              mapPixelWidth <= viewW
+                ? (mapPixelWidth - viewW) / 2
+                : Math.min(Math.max(x, 0), mapPixelWidth - viewW),
+            y:
+              mapPixelHeight <= viewH
+                ? (mapPixelHeight - viewH) / 2
+                : Math.min(Math.max(y, 0), mapPixelHeight - viewH),
+          };
+        }
+
+        /** Move the camera toward the party (eased unless `instant`). */
+        recenterCamera(instant: boolean): void {
+          const cam = this.cameras.main;
+          const sprite = this.world?.partySprite;
+          const { viewW, viewH } = this.viewSize();
+          const px = sprite ? sprite.x : mapPixelWidth / 2;
+          const py = sprite ? sprite.y : mapPixelHeight / 2;
+          const t = this.clampScroll(px - viewW / 2, py - viewH / 2);
+          if (instant) {
+            cam.setScroll(Math.round(t.x), Math.round(t.y));
+            return;
+          }
+          const nx = Math.abs(t.x - cam.scrollX) <= 1 ? t.x : cam.scrollX + (t.x - cam.scrollX) * 0.2;
+          const ny = Math.abs(t.y - cam.scrollY) <= 1 ? t.y : cam.scrollY + (t.y - cam.scrollY) * 0.2;
+          cam.setScroll(Math.round(nx), Math.round(ny));
+        }
+
+        setFollow(on: boolean): void {
+          if (this.follow === on) return;
+          this.follow = on;
+          followingRef.current(on);
+        }
+
+        update(): void {
+          if (this.follow && !this.drag) this.recenterCamera(false);
+        }
 
         constructor() {
           super("DungeonScene");
@@ -430,6 +542,9 @@ export function DungeonSimMount({
 
         create() {
           applyRenderScale(this);
+          this.cameras.main
+            .setZoom(RENDER_SCALE * ZOOM_STEPS[zoomIdxRef.current])
+            .setRoundPixels(true);
           // Detect infravision once at scene boot. Walks the party's
           // roster → character.race → race.abilities, returns true
           // when ANY active member's race carries the "infravision"
@@ -462,6 +577,7 @@ export function DungeonSimMount({
             partyHasInfravision,
             initialLightingMode: darkness ? "night" : "day",
             initialInfravisionActive: infravisionActive,
+            fogEnabled: fogRef.current,
             onRelight: (result) => {
               for (const [key, img] of this.placedItemSprites) {
                 const [cs, rs] = key.split(",");
@@ -480,7 +596,71 @@ export function DungeonSimMount({
             setPartyInfravisionActive: (active) => {
               this.world?.setPartyInfravisionActive(active);
             },
+            setFogEnabled: (enabled) => this.world?.setFogEnabled(enabled),
+            setWorldZoom: (zoom) => {
+              this.cameras.main.setZoom(RENDER_SCALE * zoom);
+              if (this.follow) {
+                this.recenterCamera(true);
+              } else {
+                const cam = this.cameras.main;
+                const c = this.clampScroll(cam.scrollX, cam.scrollY);
+                cam.setScroll(Math.round(c.x), Math.round(c.y));
+              }
+            },
+            centerOnParty: () => {
+              this.setFollow(true);
+              this.recenterCamera(true);
+            },
+            resizeView: (cssW, cssH) => {
+              this.scale.resize(
+                Math.max(1, Math.round(cssW / DISPLAY_SCALE)),
+                Math.max(1, Math.round(cssH / DISPLAY_SCALE)),
+              );
+              if (this.follow) this.recenterCamera(true);
+            },
           };
+
+          // ── Look around: drag to pan, wheel to zoom ─────────────
+          // Dragging scrolls the camera (clamped to the floor) and
+          // stops following; the party's next step or "Center on
+          // party" resumes it.
+          this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
+            const cam = this.cameras.main;
+            this.drag = { x: p.x, y: p.y, sx: cam.scrollX, sy: cam.scrollY };
+            this.game.canvas.style.cursor = "grabbing";
+          });
+          this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
+            if (!this.drag || !p.isDown) return;
+            const cam = this.cameras.main;
+            const dx = (p.x - this.drag.x) / cam.zoom;
+            const dy = (p.y - this.drag.y) / cam.zoom;
+            if (this.follow && Math.hypot(dx, dy) * cam.zoom < 4) return;
+            this.setFollow(false);
+            const c = this.clampScroll(this.drag.sx - dx, this.drag.sy - dy);
+            cam.setScroll(Math.round(c.x), Math.round(c.y));
+          });
+          const endDrag = () => {
+            this.drag = null;
+            this.game.canvas.style.cursor = "grab";
+          };
+          this.input.on("pointerup", endDrag);
+          this.input.on("pointerupoutside", endDrag);
+          this.input.on(
+            "wheel",
+            (
+              _p: Phaser.Input.Pointer,
+              _o: unknown,
+              _dx: number,
+              dy: number,
+            ) => {
+              // One step per gesture-ish: trackpads fire many events.
+              const now = performance.now();
+              if (dy === 0 || now - this.lastWheelAt < 180) return;
+              this.lastWheelAt = now;
+              zoomByRef.current(dy < 0 ? 1 : -1);
+            },
+          );
+          this.game.canvas.style.cursor = "grab";
 
           // Shared init: particle texture, cells, emitters.
           this.world.ensureParticleTexture();
@@ -510,6 +690,7 @@ export function DungeonSimMount({
           // First relight + start the sim.
           this.world.relight();
           this.mountSim();
+          this.recenterCamera(true);
         }
 
         mountSim() {
@@ -534,7 +715,11 @@ export function DungeonSimMount({
           // outlives the scene tear-down so it needs a stable ref.
           const renderer = this.world!;
           const bridge: SceneBridge = {
-            setPartyAt: (c, r) => renderer.setPartyAt(c, r),
+            setPartyAt: (c, r) => {
+              renderer.setPartyAt(c, r);
+              // A step brings the camera back to the party.
+              this.setFollow(true);
+            },
             clearParty: () => renderer.clearParty(),
             setPartyLight: (source) => renderer.setPartyLight(source),
             relight: () => renderer.relight(),
@@ -557,6 +742,8 @@ export function DungeonSimMount({
                 // moving in the background would route around the
                 // lock check.
                 if (overlaysOpenRef.current) return;
+                // The sim owns these keys — don't scroll the page.
+                if (PAGE_SCROLL_KEYS.has(e.key)) e.preventDefault();
                 handler(e.key);
               };
               window.addEventListener("keydown", listener);
@@ -666,13 +853,13 @@ export function DungeonSimMount({
 
       game = new Phaser.Game({
         type: Phaser.AUTO,
-        width: width * RENDER_SCALE,
-        height: height * RENDER_SCALE,
-        parent: containerRef.current,
+        width: Math.round(viewCss.w / DISPLAY_SCALE),
+        height: Math.round(viewCss.h / DISPLAY_SCALE),
+        parent: host,
         backgroundColor: "#0c0c14",
         pixelArt: true,
         // Hi-res backbuffer shown 1:1 — tiles at their standard tile size (NATIVE_TILE_CSS_PX).
-        scale: { zoom: NATIVE_TILE_CSS_PX / (TILE_SIZE * RENDER_SCALE) },
+        scale: { zoom: DISPLAY_SCALE },
         scene: DungeonScene,
       });
     })();
@@ -698,6 +885,30 @@ export function DungeonSimMount({
   useEffect(() => {
     sceneRef.current?.setLightingMode(darkness ? "night" : "day");
   }, [darkness]);
+
+  useEffect(() => {
+    sceneRef.current?.setFogEnabled(fogOfWar);
+  }, [fogOfWar]);
+
+  useEffect(() => {
+    sceneRef.current?.setWorldZoom(ZOOM_STEPS[zoomIdx]);
+  }, [zoomIdx]);
+
+  // Keep the canvas sized to its viewport box (window resize, sidebar).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      sceneRef.current?.resizeView(el.clientWidth, el.clientHeight);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [exited, floorRecord]);
+
+  // Bring the viewport on screen when a run starts.
+  useEffect(() => {
+    containerRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, []);
 
   // Mirror the launcher's Infravision checkbox into the sim by
   // way of `sim.setInfravisionActive` — which updates the
@@ -747,12 +958,52 @@ export function DungeonSimMount({
         {floorIdx > 0 ? "Stairs ↑ ascend; " : "Stairs ↑ exit; "}
         {floorIdx < levels.length - 1
           ? "stairs ↓ descend."
-          : "stairs ↓ exit."}
+          : "stairs ↓ exit."}{" "}
+        Drag the map to look around; scroll to zoom.
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-[13px] text-parchment/85">
+        <div className="flex items-center overflow-hidden rounded border border-parchment/25">
+          <button
+            type="button"
+            onClick={() => zoomBy(-1)}
+            disabled={zoomIdx === 0}
+            className="px-2 py-0.5 hover:bg-ink/50 disabled:opacity-40"
+            title="Zoom out"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoomIdx(DEFAULT_ZOOM_IDX)}
+            className="min-w-[3.5rem] border-x border-parchment/25 px-2 py-0.5 font-mono hover:bg-ink/50"
+            title="Reset zoom"
+          >
+            {Math.round(ZOOM_STEPS[zoomIdx] * 100)}%
+          </button>
+          <button
+            type="button"
+            onClick={() => zoomBy(1)}
+            disabled={zoomIdx === ZOOM_STEPS.length - 1}
+            className="px-2 py-0.5 hover:bg-ink/50 disabled:opacity-40"
+            title="Zoom in"
+          >
+            +
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => sceneRef.current?.centerOnParty()}
+          disabled={following}
+          className="rounded border border-parchment/25 px-2 py-0.5 hover:bg-ink/50 disabled:opacity-40"
+          title="Snap the view back to the party and follow it"
+        >
+          ⌖ Center on party
+        </button>
       </div>
       <div
         ref={containerRef}
-        className="rounded border border-parchment/20 bg-ink/80 shadow-xl"
-        style={{ display: "inline-block" }}
+        tabIndex={-1}
+        className="h-[70vh] min-h-[360px] w-full overflow-hidden rounded border border-parchment/20 bg-ink/80 shadow-xl outline-none"
       />
       {/* Locked-door dialog — opens when the party bumps a cell
           flagged `locked: true` (interior doors the dungeon

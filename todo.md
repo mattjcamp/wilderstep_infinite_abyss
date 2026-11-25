@@ -1,5 +1,7 @@
 # TODO
 
+- Organize the Dungeon Editor and make it more usable
+
 # Varnfell
 
 # Notes

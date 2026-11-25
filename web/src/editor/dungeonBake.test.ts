@@ -278,3 +278,24 @@ describe("bakeDungeon", () => {
     expect(result.groupTag).toBe("dungeon:test_dungeon_1");
   });
 });
+
+describe("bakeDungeon with pre-generated levels (simulator → maps)", () => {
+  it("bakes the given floors exactly as a seeded bake would", async () => {
+    const { generateDungeonFromRecord } = await import(
+      "@/sim/dungeon/generateFromRecord"
+    );
+    const record = makeRecord();
+    const encounters = makeEncounters();
+    const seed = 31337;
+    const levels = generateDungeonFromRecord(record, { seed, encounters });
+    const fromLevels = bakeDungeon(record, {
+      seed,
+      levels,
+      encounters,
+      existingMaps: [],
+    });
+    const fromSeed = bakeDungeon(record, { seed, encounters, existingMaps: [] });
+    expect(fromLevels.mapIds).toEqual(fromSeed.mapIds);
+    expect(JSON.stringify(fromLevels.maps)).toBe(JSON.stringify(fromSeed.maps));
+  });
+});

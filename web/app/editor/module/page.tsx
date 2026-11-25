@@ -1,7 +1,8 @@
 /**
- * /editor/module?m=<id> — module landing. Brief intro plus a grid of
- * model cards linking into each model's browse view, the asset
- * browsers, and the simulators.
+ * /editor/module?m=<id> — module landing. Brief intro, libraries +
+ * properties, then a card per editor in the same groups as the
+ * sidebar (World / Enemies / Assets / Players / Simulations — see
+ * editorNav.ts).
  *
  * Query-param route (not `[moduleId]`) so the static export serves one
  * page for any module id — hosted `@handle/slug` modules included. The
@@ -11,16 +12,9 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
-import { ALL_MODEL_KEYS, MODELS, type ModelKey } from "@/data_model/models";
 import { LibrariesPanel } from "@/editor/LibrariesPanel";
 import { EditorShell, useEditorModuleId } from "@/editor/editorShell";
-import {
-  editorModelHref,
-  editorSpritesHref,
-  editorSoundtrackHref,
-  editorBattleSimHref,
-  editorDungeonSimHref,
-} from "@/editor/moduleRoutes";
+import { EDITOR_NAV_GROUPS, navEntryInfo } from "@/editor/editorNav";
 
 const CARD =
   "block rounded-md border border-parchment/15 bg-ink/30 p-3 transition hover:border-parchment/40 hover:bg-ink/50";
@@ -38,80 +32,30 @@ function ModuleHome({ moduleId }: { moduleId: string }) {
 
       <LibrariesPanel moduleId={moduleId} />
 
-      <section className="mb-8">
-        <h2 className="mb-3 text-xs uppercase tracking-wide text-parchment/40">
-          Module data
-        </h2>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {ALL_MODEL_KEYS.map((k: ModelKey) => {
-            const def = MODELS[k];
-            return (
-              <li key={k}>
-                <Link href={editorModelHref(moduleId, k)} className={CARD}>
-                  <div className="font-display text-lg text-parchment">
-                    {def.label}
-                  </div>
-                  <p className="mt-0.5 text-sm text-parchment/60">{def.blurb}</p>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="mb-3 text-xs uppercase tracking-wide text-parchment/40">
-          Assets
-        </h2>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          <li>
-            <Link href={editorSpritesHref(moduleId)} className={CARD}>
-              <div className="font-display text-lg text-parchment">Sprites</div>
-              <p className="mt-0.5 text-sm text-parchment/60">
-                PNG assets grouped by category — what art is available to
-                reference from data records
-              </p>
-            </Link>
-          </li>
-          <li>
-            <Link href={editorSoundtrackHref(moduleId)} className={CARD}>
-              <div className="font-display text-lg text-parchment">
-                Soundtrack
-              </div>
-              <p className="mt-0.5 text-sm text-parchment/60">
-                Audio tracks grouped by context (combat, dungeon, overworld,
-                town) — what music is available to reference
-              </p>
-            </Link>
-          </li>
-        </ul>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="mb-3 text-xs uppercase tracking-wide text-parchment/40">
-          Simulators
-        </h2>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          <li>
-            <Link href={editorBattleSimHref(moduleId)} className={CARD}>
-              <div className="font-display text-lg text-parchment">Battle</div>
-              <p className="mt-0.5 text-sm text-parchment/60">
-                Pick an encounter + arena and run the ported combat scene
-                end-to-end against the module&apos;s party.
-              </p>
-            </Link>
-          </li>
-          <li>
-            <Link href={editorDungeonSimHref(moduleId)} className={CARD}>
-              <div className="font-display text-lg text-parchment">Dungeon</div>
-              <p className="mt-0.5 text-sm text-parchment/60">
-                Procedurally generate a floor from a Dungeon record and walk
-                the party through it.
-              </p>
-            </Link>
-          </li>
-        </ul>
-      </section>
+      {EDITOR_NAV_GROUPS.map((group) => (
+        <section key={group.label} className="mb-8">
+          <h2 className="mb-3 text-xs uppercase tracking-wide text-parchment/40">
+            {group.label}
+          </h2>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {group.entries.map((entry) => {
+              const info = navEntryInfo(entry, moduleId);
+              return (
+                <li key={info.id}>
+                  <Link href={info.href} className={CARD}>
+                    <div className="font-display text-lg text-parchment">
+                      {info.label}
+                    </div>
+                    <p className="mt-0.5 text-sm text-parchment/60">
+                      {info.blurb}
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
     </main>
   );
 }

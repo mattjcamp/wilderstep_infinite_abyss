@@ -20,7 +20,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { mergeModel } from "@/data_model/merge";
 import { getEditorModuleSource } from "@/data_model/sourceConfig";
-import { dungeonSeed } from "@/battle/world/Dungeon";
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import { bakedMapId, nextFreeSuffix } from "./dungeonBake";
 
@@ -105,7 +104,9 @@ export function GenerateDungeonDialog({
     const seed =
       seedOverride.trim().length > 0
         ? Number.parseInt(seedOverride, 10) >>> 0
-        : dungeonSeed(selected.id, 0, 0);
+        : // Blank = a fresh random layout every time (it used to be
+          // derived from the dungeon id, so every bake looked alike).
+          Math.floor(Math.random() * 0x7fffffff);
     if (!Number.isFinite(seed)) return;
     onConfirm({ record: selected, seed });
   };
@@ -176,13 +177,13 @@ export function GenerateDungeonDialog({
               type="text"
               value={seedOverride}
               onChange={(e) => setSeedOverride(e.target.value)}
-              placeholder="leave blank for default"
+              placeholder="leave blank for random"
               className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-sm text-parchment/90"
             />
             <p className="mt-1 text-[13px] text-parchment/65">
-              Numeric seed pinned across floors. Leave blank to use
-              the dungeon's stable default; supply a value to
-              reproduce or reroll a specific layout.
+              Numeric seed pinned across floors. Leave blank for a
+              new random layout each time; supply a value to
+              reproduce a specific layout.
             </p>
           </label>
 

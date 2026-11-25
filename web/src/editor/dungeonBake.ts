@@ -60,6 +60,7 @@ import {
   type DungeonMapRecord,
 } from "@/sim/dungeon/dungeonLevelToMap";
 import type { DungeonRecord } from "@/sim/dungeon/types";
+import type { DungeonLevel } from "@/battle/world/Dungeon";
 
 /** A baked map record — same shape as `DungeonMapRecord` but with
  *  real persistable ids and tags. Distinct alias kept so callers can
@@ -78,6 +79,10 @@ export interface BakeDungeonOptions extends GenerateFromRecordOptions {
   /** `map_tiles` palette id → sprite path. Forwarded to the converter
    *  so the baked dungeon resolves its tileset sprites. */
   paletteSprites?: ReadonlyMap<string, string>;
+  /** Already-generated floors to bake instead of running the
+   *  generator — the dungeon simulator passes the exact layout the
+   *  author was walking ("Create maps from this layout"). */
+  levels?: DungeonLevel[];
 }
 
 export interface BakeDungeonResult {
@@ -110,7 +115,7 @@ export function bakeDungeon(
   const suffix = nextFreeSuffix(record.id, opts.existingMaps);
   const groupTag = `dungeon:${record.id}_${suffix}`;
 
-  const levels = generateDungeonFromRecord(record, opts);
+  const levels = opts.levels ?? generateDungeonFromRecord(record, opts);
   const totalFloors = levels.length;
 
   // Pre-compute the synthetic→real map-id mapping. The converter

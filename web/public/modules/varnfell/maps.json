@@ -558152,7 +558152,25 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeons/dungeon/floors/floor_cobble.png",
-            "tag": "Dungeons:dungeon:floors"
+            "tag": "Dungeons:dungeon:floors",
+            "item": "treasure_chest",
+            "loot": {
+              "gold": 25,
+              "items": [
+                {
+                  "id": "healing_potion",
+                  "qty": 3
+                },
+                {
+                  "id": "mana_potion",
+                  "qty": 3
+                },
+                {
+                  "id": "fire_arrows",
+                  "qty": 25
+                }
+              ]
+            }
           },
           {
             "id": "water",
@@ -558330,7 +558348,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeons/dungeon/floors/floor_cobble.png",
-            "tag": "Dungeons:dungeon:floors"
+            "tag": "Dungeons:dungeon:floors",
+            "trap_id": "teleport_trap"
           },
           {
             "boat": false,
@@ -558346,7 +558365,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeons/dungeon/floors/floor_cobble.png",
-            "tag": "Dungeons:dungeon:floors"
+            "tag": "Dungeons:dungeon:floors",
+            "trap_id": "teleport_trap"
           },
           {
             "id": "water",
@@ -559314,7 +559334,7 @@
             "light_range": 0,
             "animation": "none",
             "counter": null,
-            "encounter": null,
+            "encounter": "water_elemental",
             "spawn": null,
             "sprite": "dungeons/dungeon/floors/floor_cobble.png",
             "tag": "Dungeons:dungeon:floors"
@@ -559988,7 +560008,8 @@
             "tag": "Dungeons:dungeon:walls"
           }
         ]
-      ]
+      ],
+      "lighting": "darkness"
     },
     {
       "id": "oracle_5",

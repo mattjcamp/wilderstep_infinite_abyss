@@ -2,12 +2,11 @@
   "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/test/module.json.",
   "id": "test",
   "title": "Test",
-  "description": "Test",
-  "author": "",
+  "description": "Module used to test new features, it's set in the sprawling world of Varnfell and includes a more rogue-like experience with randomly generated dungeons.",
   "version": "0.1.0",
-  "role": "playable",
   "extends": "default",
   "uses": [
     "varnfell"
-  ]
+  ],
+  "trailer": "You and your group of flunkies have found yourselves stranded on the shores of the untamed world of Varnfell. Varnfell is a place that has been abandoned by the gods where the people are forced to live under the tyranny of The Deep Ones, a god-like race that controls all the healing power in the lands of Varnfell."
 }

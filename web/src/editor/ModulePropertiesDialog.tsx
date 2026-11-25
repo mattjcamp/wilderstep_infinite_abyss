@@ -13,6 +13,9 @@
  *                   at a high level (module card / play picker).
  *   - trailer     — playable modules only: the dramatic opening shown
  *                   on the beginning screen when a new game starts.
+ *   - start position — map + cell where a new game begins. Stored in
+ *                   the module's party.json (`start_position`), not
+ *                   the manifest; the caller writes the party draft.
  *   - author      — optional.
  *   - version     — semver-style string (not validated).
  *   - role        — radio: playable / library. If the module is
@@ -35,6 +38,10 @@
 import { useEffect, useState } from "react";
 import type { ModuleSummary } from "@/data_model/ModuleSource";
 import { SoundtrackPicker } from "./SoundtrackPicker";
+import {
+  ModuleStartPositionField,
+  type StartPositionPatch,
+} from "./ModuleStartPositionField";
 import { DEFAULT_EXPLORATION_XP } from "@/play/explorationXp";
 
 /** Subset of ModuleSummary that this dialog is allowed to mutate.
@@ -73,6 +80,10 @@ export interface ModulePropertiesPatch {
     map: number | undefined;
     npc: number | undefined;
   };
+  /** Party start position (party.json `start_position`, not the
+   *  manifest). `undefined` = untouched, `null` = drop this module's
+   *  override and inherit, a value = set it on this module's party. */
+  startPosition: StartPositionPatch;
 }
 
 /** Engine fallbacks shown as placeholder text so the author sees what
@@ -135,6 +146,11 @@ export function ModulePropertiesDialog({
     radiusToInput(initial.explorationXp?.npc),
   );
 
+  // Party start position — undefined until the author edits it, so an
+  // unrelated save never touches party.json.
+  const [startPosition, setStartPosition] =
+    useState<StartPositionPatch>(undefined);
+
   const [titleError, setTitleError] = useState<string | null>(null);
 
   // Same keyboard ergonomics as MapAttributesDialog — Escape closes,
@@ -167,6 +183,7 @@ export function ModulePropertiesDialog({
     sightNight,
     xpMap,
     xpNpc,
+    startPosition,
   ]);
 
   const handleSave = () => {
@@ -208,6 +225,7 @@ export function ModulePropertiesDialog({
         map: parseRadius(xpMap),
         npc: parseRadius(xpNpc),
       },
+      startPosition,
     });
   };
 
@@ -330,6 +348,15 @@ export function ModulePropertiesDialog({
                 instead.
               </span>
             </label>
+          ) : null}
+
+          {/* Start position (stored in party.json) ------------- */}
+          {role !== "theme" ? (
+            <ModuleStartPositionField
+              moduleId={initial.id}
+              value={startPosition}
+              onChange={setStartPosition}
+            />
           ) : null}
 
           {/* Author + Version ----------------------------------- */}

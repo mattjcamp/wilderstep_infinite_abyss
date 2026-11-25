@@ -6,7 +6,6 @@
  * Party editor. Roster and inventory are edited directly in the
  * preview; everything else that seeds a new game lives here:
  *
- *   - Start position (map + cell), with an out-of-bounds warning
  *   - Overworld avatar sprite
  *   - Starting gold
  *   - Torch / Galadriel's Light steps already lit at the start
@@ -17,27 +16,14 @@
  * inherited or set here, and fields set here offer "Use inherited" to
  * drop the override. The host owns persistence (draft) — this
  * component only calls `onSet` / `onReset`.
+ *
+ * The party's start position (party.json `start_position`) is edited
+ * from Module Properties instead — see ModuleStartPositionField.
  */
 
 import { useEffect, useState, type ReactNode } from "react";
 import { SpritePicker } from "./SpritePicker";
-import { MapPickerField } from "./MapPickerDialog";
 import type { PartyAbilityRef, PartyRecord } from "./PartyScreen";
-
-export interface PartyMapRef {
-  id: string;
-  name?: string;
-  tags?: string[];
-  width?: number;
-  height?: number;
-  description?: string;
-}
-
-interface StartPosition {
-  map_id?: string;
-  col?: number;
-  row?: number;
-}
 
 const AVATAR_CONFIG = { category: "person", format: "path" } as const;
 
@@ -45,8 +31,6 @@ export function PartyAttributesEditor({
   party,
   ownKeys,
   hasParent,
-  maps,
-  mapTagOrder,
   abilities,
   onSet,
   onReset,
@@ -58,25 +42,10 @@ export function PartyAttributesEditor({
   /** True when the module extends another — enables the
    *  inherited / overridden badges and "Use inherited". */
   hasParent: boolean;
-  maps: ReadonlyArray<PartyMapRef>;
-  /** maps.json tag order — pinned tag groups first in the picker. */
-  mapTagOrder?: ReadonlyArray<string>;
   abilities: ReadonlyArray<PartyAbilityRef>;
   onSet: (key: string, value: unknown) => void;
   onReset: (key: string) => void;
 }) {
-  const start = (party.start_position ?? {}) as StartPosition;
-  const startMap = maps.find((m) => m.id === start.map_id);
-  const col = start.col ?? 0;
-  const row = start.row ?? 0;
-  const outOfBounds =
-    !!startMap &&
-    typeof startMap.width === "number" &&
-    typeof startMap.height === "number" &&
-    (col < 0 || row < 0 || col >= startMap.width || row >= startMap.height);
-  const setStart = (patch: StartPosition) =>
-    onSet("start_position", { map_id: "", col: 0, row: 0, ...start, ...patch });
-
   const effectAbilities = abilities.filter(
     (a) => (a as { party_effect?: boolean }).party_effect === true,
   );
@@ -99,49 +68,6 @@ export function PartyAttributesEditor({
         Party Attributes
       </h3>
       <div className="grid gap-x-6 gap-y-3 md:grid-cols-2">
-        {field(
-          "start_position",
-          "Start position",
-          <div className="flex flex-wrap items-center gap-1">
-            <MapPickerField
-              className="min-w-0 flex-1"
-              title="Party start map"
-              value={start.map_id ?? ""}
-              maps={maps}
-              tagOrder={mapTagOrder}
-              onChange={(id) => setStart({ map_id: id })}
-            />
-            <NumberInput
-              label="Start column"
-              placeholder="col"
-              value={col}
-              min={0}
-              onCommit={(n) => setStart({ col: n })}
-            />
-            <NumberInput
-              label="Start row"
-              placeholder="row"
-              value={row}
-              min={0}
-              onCommit={(n) => setStart({ row: n })}
-            />
-          </div>,
-          start.map_id && !startMap ? (
-            <span className="text-amber-200/90">
-              Unknown map id — not present in maps.json.
-            </span>
-          ) : outOfBounds ? (
-            <span className="text-amber-200/90">
-              ({col}, {row}) is outside {startMap?.name ?? start.map_id} (
-              {startMap?.width}×{startMap?.height}).
-            </span>
-          ) : startMap?.width ? (
-            <>Map is {startMap.width}×{startMap.height}. Where a new game begins.</>
-          ) : (
-            <>Where a new game begins.</>
-          ),
-        )}
-
         {field(
           "avatar",
           "Overworld avatar",
@@ -279,7 +205,7 @@ function FieldRow({
 
 /** Integer field that commits on blur / Enter, so typing "120" doesn't
  *  write 1, 12, 120 to the draft. */
-function NumberInput({
+export function NumberInput({
   label,
   value,
   min,

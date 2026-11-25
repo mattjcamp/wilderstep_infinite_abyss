@@ -22,7 +22,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { mergeModel } from "@/data_model/merge";
 import { getEditorModuleSource } from "@/data_model/sourceConfig";
-import { dungeonSeed } from "@/battle/world/Dungeon";
 import {
   _clearEncountersCache,
   loadEncounters,
@@ -44,6 +43,9 @@ import {
 } from "@/sim/dungeon/dungeonSession";
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import { DungeonSimMount } from "./DungeonSimMount";
+import { createMapsFromDungeon } from "./createMapsFromDungeon";
+import { editorMapHref } from "../moduleRoutes";
+import Link from "next/link";
 
 export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
   const searchParams = useSearchParams();
@@ -69,6 +71,19 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
   // the player just stepped onto a dungeon cell, they don't want to
   // press another button.
   const [started, setStarted] = useState(!!initialDungeonId);
+  // Seed used when the Seed field is blank — a fresh random roll for
+  // every Generate / Regenerate, like a new run in game. (It used to
+  // be derived from the dungeon id, so every regenerate produced the
+  // same layout.) Shown under the controls so a layout can be
+  // replayed by typing it into the Seed field.
+  const [rolledSeed, setRolledSeed] = useState<number>(() => randomSeed());
+  // "Create maps from this layout" status for the current run.
+  const [createState, setCreateState] = useState<
+    | { kind: "idle" }
+    | { kind: "working" }
+    | { kind: "done"; mapIds: string[]; groupTag: string; publishedDirectly: boolean }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
   const [loadError, setLoadError] = useState<string | null>(null);
   // Darkness toggle — when on, the dungeon mount renders with the
   // "night" ambient lighting model (low ambient + Bresenham-LOS
@@ -82,6 +97,9 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
   // by another source). Off by default; engaging it without an
   // eligible roster member is a no-op on the sim side.
   const [infravisionActive, setInfravisionActive] = useState<boolean>(false);
+  // Fog of war toggle — off reveals the whole floor (lighting still
+  // applies), so authors can check a layout without exploring it.
+  const [fogOfWar, setFogOfWar] = useState<boolean>(true);
   // Encounters table + monsters catalog — loaded once per module
   // mount. The generator samples encounters per non-entrance room
   // (`sampleEncounter` inside v1's `placeRandomEncounters`), and
@@ -161,7 +179,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
     const seed =
       seedOverride.trim().length > 0
         ? Number.parseInt(seedOverride, 10) >>> 0
-        : dungeonSeed(selected.id, 0, 0);
+        : rolledSeed;
     if (!Number.isFinite(seed)) return null;
     const session = getOrCreateDungeonSession(selected.id, seed, () => {
       // monsterDifficulty closure — looks up the per-monster
@@ -177,7 +195,46 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
       });
     });
     return { dungeon: selected, levels: session.levels };
-  }, [selected, started, seedOverride, encountersTable, monstersCatalog]);
+  }, [selected, started, seedOverride, rolledSeed, encountersTable, monstersCatalog]);
+
+  // A new layout starts with nothing created from it yet.
+  useEffect(() => {
+    setCreateState({ kind: "idle" });
+  }, [generated]);
+
+  const effectiveSeed =
+    seedOverride.trim().length > 0
+      ? Number.parseInt(seedOverride, 10) >>> 0
+      : rolledSeed;
+
+  /** Save the current layout as regular maps (one per floor). The
+   *  floors are regenerated from the same seed + catalogs, so they
+   *  match what's on screen but carry nothing the party did here. */
+  const onCreateMaps = async () => {
+    if (!selected || !Number.isFinite(effectiveSeed)) return;
+    setCreateState({ kind: "working" });
+    try {
+      const monsterDifficulty = (id: string): string | undefined =>
+        monstersCatalog.get(id)?.difficulty;
+      const levels = generateDungeonFromRecord(selected, {
+        seed: effectiveSeed,
+        encounters: encountersTable,
+        monsterDifficulty,
+      });
+      const res = await createMapsFromDungeon({
+        moduleId,
+        record: selected,
+        levels,
+        seed: effectiveSeed,
+      });
+      setCreateState({ kind: "done", ...res });
+    } catch (e) {
+      setCreateState({
+        kind: "error",
+        message: e instanceof Error ? e.message : String(e),
+      });
+    }
+  };
 
   const totalFloors = generated?.levels.length ?? 0;
   const clampedFloor = totalFloors > 0
@@ -239,7 +296,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
               setSeedOverride(e.target.value);
               if (started) setStarted(false);
             }}
-            placeholder="(deterministic from id)"
+            placeholder="(random each time)"
             className="w-[180px] rounded border border-parchment/30 bg-ink/60 px-2 py-1 font-mono text-sm text-parchment focus:border-parchment/60 focus:outline-none"
           />
         </div>
@@ -280,6 +337,19 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
 
         <label
           className="flex cursor-pointer items-center gap-2 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment/80 hover:bg-ink/60"
+          title="Hide cells the party hasn't seen yet. Toggle off to reveal the whole floor (lighting still applies — turn Darkness off too to see everything)."
+        >
+          <input
+            type="checkbox"
+            checked={fogOfWar}
+            onChange={(e) => setFogOfWar(e.target.checked)}
+            className="accent-ember"
+          />
+          Fog of war
+        </label>
+
+        <label
+          className="flex cursor-pointer items-center gap-2 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment/80 hover:bg-ink/60"
           title="Engage the party's infravision ability (e.g. Dwarf). Every cell in LOS becomes visible — torchlit cells render normally, otherwise-dark cells render in shades of red. Has no effect when no roster member has the ability."
         >
           <input
@@ -294,16 +364,14 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
         <button
           type="button"
           onClick={() => {
-            // "Regenerate" explicitly clears the session for the
-            // picked dungeon so the next mount rolls a fresh
-            // layout. Without this the store would keep handing
-            // back the same generated levels (the design goal —
-            // dungeons are rolled once per game) and the button
-            // would be a no-op past the first click.
-            if (started && selected) {
-              clearDungeonSession(selected.id);
-            }
-            setStarted((v) => !v);
+            // Every press rolls a new layout: clear the session (the
+            // store otherwise hands back the same generated levels —
+            // dungeons are rolled once per game) and, unless a seed
+            // was typed, draw a fresh random seed. Regenerate goes
+            // straight to the new floor rather than stopping first.
+            if (selected) clearDungeonSession(selected.id);
+            setRolledSeed(randomSeed());
+            setStarted(true);
           }}
           disabled={!selected}
           className="rounded border border-ember/60 bg-ember/30 px-4 py-1 text-sm text-parchment hover:bg-ember/50 disabled:opacity-50"
@@ -321,6 +389,49 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
       {selected ? <FloorsPreview record={selected} /> : null}
 
       {generated && started ? (
+        <p className="mb-2 text-[13px] text-parchment/70">
+          Seed{" "}
+          <span className="font-mono text-parchment/90">
+            {seedOverride.trim() ? seedOverride.trim() : rolledSeed}
+          </span>
+          {seedOverride.trim() ? <> (typed — Regenerate replays this layout)</> : null}
+          {" · "}
+          {createState.kind === "done" ? (
+            <span className="text-parchment/85">
+              Created {createState.mapIds.length} map
+              {createState.mapIds.length === 1 ? "" : "s"} tagged{" "}
+              <span className="font-mono">{createState.groupTag}</span>
+              {createState.publishedDirectly
+                ? " (written to disk)"
+                : " (saved to the maps draft)"}
+              .{" "}
+              <Link
+                href={editorMapHref(moduleId, createState.mapIds[0])}
+                className="text-amber-200 underline decoration-dotted hover:text-parchment"
+              >
+                Open floor 1 in the Map Editor →
+              </Link>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void onCreateMaps()}
+              disabled={createState.kind === "working"}
+              className="rounded border border-parchment/30 px-2 py-0.5 text-parchment/90 hover:bg-ink/50 disabled:opacity-50"
+              title="Save this layout as regular maps (one per floor, stairs linked) that you can fine-tune in the Map Editor"
+            >
+              {createState.kind === "working"
+                ? "Creating maps…"
+                : "＋ Create maps from this layout"}
+            </button>
+          )}
+          {createState.kind === "error" ? (
+            <span className="ml-2 text-ember">{createState.message}</span>
+          ) : null}
+        </p>
+      ) : null}
+
+      {generated && started ? (
         <DungeonSimMount
           // Remount on every regenerate / floor change / dungeon
           // switch so the scene starts from a clean state. The
@@ -328,7 +439,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
           // toggling it shouldn't tear down the game; the mount's
           // internal effect picks up the prop change and just
           // re-runs the lighting pass.
-          key={`${generated.dungeon.id}:${seedOverride}:${clampedFloor}`}
+          key={`${generated.dungeon.id}:${seedOverride}:${rolledSeed}:${clampedFloor}`}
           moduleId={moduleId}
           dungeonId={generated.dungeon.id}
           levels={generated.levels}
@@ -336,6 +447,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
           returnTo={returnTo}
           darkness={darkness}
           infravisionActive={infravisionActive}
+          fogOfWar={fogOfWar}
         />
       ) : (
         <p className="text-sm text-parchment/65">
@@ -430,4 +542,9 @@ function FloorsPreview({ record }: { record: DungeonRecord }) {
       </p>
     </div>
   );
+}
+
+/** A random 31-bit seed (same range the game rolls for a new run). */
+function randomSeed(): number {
+  return Math.floor(Math.random() * 0x7fffffff);
 }

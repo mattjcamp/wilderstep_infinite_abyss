@@ -15,6 +15,9 @@
  * the new module.json so the author can drop it into the repo and
  * commit. Inherited uses from the extends chain aren't editable here
  * (manage them from the parent module's panel).
+ *
+ * The header also opens the Module Properties dialog for this module
+ * (same dialog as the picker cards), saving through the same helper.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -29,6 +32,8 @@ import {
 import type { ModuleSummary } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
 import { usePublishServer } from "./usePublishServer";
+import { ModulePropertiesDialog } from "./ModulePropertiesDialog";
+import { saveModuleProperties } from "./moduleProperties";
 
 type Manifest = Record<string, unknown> & { uses?: string[] };
 
@@ -47,6 +52,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [picking, setPicking] = useState<string>("");
   const [publishing, setPublishing] = useState(false);
+  const [editingProps, setEditingProps] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -174,7 +180,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
     if (
       typeof window !== "undefined" &&
       !window.confirm(
-        "Discard pending changes to this module's manifest (uses array)?",
+        "Discard pending changes to this module's manifest (libraries and properties)?",
       )
     ) {
       return;
@@ -190,6 +196,28 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
         isDraft: false,
       });
     });
+  };
+
+  const thisModule = state.allModules.find((m) => m.id === moduleId);
+
+  const onSaveProperties = async (
+    patch: Parameters<typeof saveModuleProperties>[2],
+  ) => {
+    if (state.kind !== "ok") return;
+    const nextManifest = (await saveModuleProperties(
+      moduleId,
+      state.manifest,
+      patch,
+    )) as Manifest;
+    // Re-list so the summary the dialog re-opens with is current.
+    const all = await getEditorModuleSource().list();
+    setState({
+      ...state,
+      manifest: nextManifest,
+      allModules: all,
+      isDraft: true,
+    });
+    setEditingProps(false);
   };
 
   const usesById = new Map(state.allModules.map((m) => [m.id, m]));
@@ -223,6 +251,16 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
               className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
             >
               Discard
+            </button>
+          ) : null}
+          {thisModule ? (
+            <button
+              type="button"
+              onClick={() => setEditingProps(true)}
+              className="rounded border border-parchment/30 px-2 py-0.5 text-[13px] text-parchment/90 hover:bg-ink/40"
+              title="Edit title, description, trailer, start position, soundtrack and other module settings."
+            >
+              ⚙ Properties
             </button>
           ) : null}
           <button
@@ -324,6 +362,15 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
           </p>
         ) : null}
       </div>
+
+      {editingProps && thisModule ? (
+        <ModulePropertiesDialog
+          initial={thisModule}
+          themes={state.allModules.filter((m) => m.role === "theme")}
+          onSave={(patch) => void onSaveProperties(patch)}
+          onClose={() => setEditingProps(false)}
+        />
+      ) : null}
     </section>
   );
 }
