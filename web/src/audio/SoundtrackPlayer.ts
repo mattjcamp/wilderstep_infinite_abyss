@@ -467,6 +467,13 @@ export function hasPlaylist(): boolean {
   return _playlist.length > 0;
 }
 
+/** The current playlist (a copy). Lets a host remember what was
+ *  playing before a temporary switch — e.g. a battle map's own
+ *  soundtrack — and put it back afterwards. */
+export function getPlaylist(): string[] {
+  return [..._playlist];
+}
+
 /** Bundled-export shape so callers can keep one import and write
  *  `Soundtrack.play()` / `Soundtrack.setPlaylist(...)`. */
 export const Soundtrack = {
@@ -479,4 +486,5 @@ export const Soundtrack = {
   setVolume,
   getVolume,
   hasPlaylist,
+  getPlaylist,
 };

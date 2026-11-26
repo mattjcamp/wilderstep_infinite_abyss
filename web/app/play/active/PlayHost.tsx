@@ -1097,6 +1097,9 @@ export function PlayHost() {
    *  combat scene reports back via `onResolved`. While set the world
    *  Phaser game is unmounted and PlayCombatHost takes its place. */
   const [combat, setCombat] = useState<SpawnEncounterOptions | null>(null);
+  /** Playlist that was playing before a battle map's own soundtrack
+   *  took over — restored when the fight ends. Null = no swap active. */
+  const preBattlePlaylistRef = useRef<string[] | null>(null);
   /** Pre-combat encounter screen (Fight / Run / Talk) — set on
    *  `spawn_encountered`; Fight (or a failed Run / Talk) promotes it
    *  to `combat`, a successful Run / Talk resolves it as "fled". */
@@ -1477,12 +1480,10 @@ export function PlayHost() {
     const cat = catalogRef.current;
     const detectChars = (cat?.characters ?? []) as Parameters<typeof trapDetectors>[1];
     const detectClasses = (cat?.classes ?? []) as unknown as ReadonlyArray<DetectorClass>;
-    // The effect only counts when someone in the roster has the ability
-    // (the Party screen hides the toggle otherwise); an id left in
-    // party_effects without a holder does nothing.
+    // Passive: always on while someone in the roster has the ability
+    // (nothing to switch on in the Party screen).
     const hasDetect =
-      !!cur?.party.party_effects?.includes("detect_traps") &&
-      partyHasDetectTraps(cur.party.members, detectChars, detectClasses);
+      !!cur && partyHasDetectTraps(cur.party.members, detectChars, detectClasses);
     if (!cur || !hasDetect || liveTrapsRef.current.size === 0) {
       trapsInViewRef.current = new Set();
       r.setDetectedTraps(new Set());
@@ -2654,6 +2655,12 @@ export function PlayHost() {
     // The location's own soundtrack: a dungeon override while inside a
     // dungeon, otherwise the map's override.
     const own = dungeon ? dungeonRecord?.soundtrack : catalog.map.soundtrack;
+    // Mid-fight on a battle map with its own music: don't cut it off —
+    // just update what plays again once the fight ends.
+    if (preBattlePlaylistRef.current !== null) {
+      if (own && own.length > 0) preBattlePlaylistRef.current = [...own];
+      return;
+    }
     if (own && own.length > 0) {
       // This place sets its own tone — switch to it.
       Soundtrack.setPlaylist(own);
@@ -2664,6 +2671,35 @@ export function PlayHost() {
       Soundtrack.setPlaylist(catalog.moduleSoundtrack ?? []);
     }
   }, [state, reloadKey]);
+
+  // Battle music — a fight on a battle map that has its own soundtrack
+  // (Map Properties → soundtrack) plays that while the fight lasts; the
+  // music from before comes back afterwards. The arena is resolved the
+  // same way the combat view resolves it: the fight's `custom_map`
+  // (encounter / spawn / the dungeon's battle maps), else the default
+  // battle arena. A battle map with no soundtrack leaves the current
+  // music playing.
+  useEffect(() => {
+    if (combat) {
+      const maps = state.kind === "ok" ? state.catalog?.allMaps ?? [] : [];
+      const arena =
+        (combat.customMapId ? maps.find((m) => m.id === combat.customMapId) : undefined) ??
+        maps.find((m) => m.id === DEFAULT_BATTLE_ARENA_ID);
+      const battleTracks = (arena?.soundtrack ?? []).filter((u) => !!u);
+      if (battleTracks.length > 0 && preBattlePlaylistRef.current === null) {
+        preBattlePlaylistRef.current = Soundtrack.getPlaylist();
+        Soundtrack.setPlaylist(battleTracks);
+        // Entering combat follows a player action, so playback is
+        // allowed; no-op if already playing.
+        Soundtrack.play();
+      }
+    } else if (preBattlePlaylistRef.current !== null) {
+      Soundtrack.setPlaylist(preBattlePlaylistRef.current);
+      preBattlePlaylistRef.current = null;
+    }
+    // Only the fight starting / ending should swap music.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [combat]);
 
   // Adventure start — the bottom bar's "Day N" counts from it. New
   // games record it on the save; older saves get it resolved once from
@@ -2977,6 +3013,20 @@ export function PlayHost() {
           save = {
             ...save,
             party: { ...save.party, members: nextMembers },
+          };
+          saveRef.current = save;
+          saveWorld(save);
+        }
+        // Detect Traps used to be a Party-screen toggle stored in
+        // `party_effects`; it's passive now. Drop the stale id from
+        // older saves so it doesn't linger in the effects readout.
+        if (save.party.party_effects?.includes("detect_traps")) {
+          save = {
+            ...save,
+            party: {
+              ...save.party,
+              party_effects: save.party.party_effects.filter((id) => id !== "detect_traps"),
+            },
           };
           saveRef.current = save;
           saveWorld(save);
@@ -8355,18 +8405,12 @@ export function PlayHost() {
                 sim.setInfravisionActive(!!next.party.infravision_active);
               }
             }
-            // Detect Traps toggle — refresh the red-X overlay layer.
-            // refreshDetectedTraps reads `saveRef.current` (which we
-            // just updated) to decide whether to paint or clear, and
-            // pushes the current liveTrapsRef contents through the
-            // bridge to the renderer.
-            const prevDetect = !!prev?.party.party_effects?.includes(
-              "detect_traps",
-            );
-            const nextDetect = !!next.party.party_effects?.includes(
-              "detect_traps",
-            );
-            if (prevDetect !== nextDetect) {
+            // Detect Traps is passive, keyed on who's in the party —
+            // refresh when the roster changes (a Thief joins / leaves).
+            if (
+              prev?.party.members.map((m) => m.id).join() !==
+              next.party.members.map((m) => m.id).join()
+            ) {
               refreshDetectedTraps();
             }
             // Clock jump — camping through the night advances

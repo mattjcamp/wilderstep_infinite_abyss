@@ -683,8 +683,13 @@ export function PartyScreen({
     // left) never get a row: if no character has it, there's nothing
     // to turn on.
     const existingIds = new Set(rows.map((r) => r.ability.id));
-    const abilityIds = new Set(abilities.map((a) => a.id));
-    const lockedAbility = (id: string) => abilityIds.has(id) && !unlocked.has(id);
+    // …nor do abilities that aren't toggles at all (passive ones like
+    // Detect Traps), even if an older save still lists their id.
+    const toggleAbilityById = new Map(abilities.map((a) => [a.id, a]));
+    const lockedAbility = (id: string) => {
+      const a = toggleAbilityById.get(id);
+      return !!a && (!a.party_effect || !unlocked.has(id));
+    };
     const extraIds = new Set<string>();
     for (const id of activeEffectIds) {
       if (!existingIds.has(id) && !lockedAbility(id) && isActive(id)) extraIds.add(id);

@@ -97,7 +97,13 @@
         }
       ],
       "pit_falls": true,
-      "trader_npc": "olga_shopkeeper"
+      "trader_npc": "olga_shopkeeper",
+      "battle_maps": [
+        "cave_battle_screen"
+      ],
+      "soundtrack": [
+        "/audio/Ambient 22 Loop.mp3"
+      ]
     },
     {
       "id": "dwarven_halls",
@@ -128,7 +134,10 @@
           "id": "dwarven_halls_l2",
           "name": "Level 2",
           "depth": 2,
-          "difficulty": "normal"
+          "difficulty": "normal",
+          "battle_maps": [
+            "dungeon_battle_arena"
+          ]
         },
         {
           "id": "dwarven_halls_l3",
@@ -157,7 +166,23 @@
       "prisoner_npc": "villager_female_noble",
       "prisoner_reward": "long_bow",
       "trader_npc": "cybil",
-      "theme": "humanoid"
+      "theme": "humanoid",
+      "trap_types": [
+        {
+          "trap_id": "dart_trap",
+          "weight": 1
+        },
+        {
+          "trap_id": "teleport_trap",
+          "weight": 1
+        }
+      ],
+      "battle_maps": [
+        "dungeon_battle_arena"
+      ],
+      "soundtrack": [
+        "/audio/Ambient 16 Loop.mp3"
+      ]
     },
     {
       "id": "small_cave",
@@ -309,7 +334,13 @@
       ],
       "prisoner_npc": "frida",
       "prisoner_reward": "mana_potion",
-      "trader_npc": "cybil"
+      "trader_npc": "cybil",
+      "soundtrack": [
+        "/audio/Ambient 13 Loop.mp3"
+      ],
+      "battle_maps": [
+        "arena_graveyard"
+      ]
     },
     {
       "id": "volcanic_chasm",
@@ -391,7 +422,13 @@
       ],
       "prisoner_npc": "villager_female_noble",
       "prisoner_reward": "fire_arrows",
-      "theme": "devil"
+      "theme": "devil",
+      "soundtrack": [
+        "/audio/Ambient 10 Loop.mp3"
+      ],
+      "battle_maps": [
+        "volcano_battle"
+      ]
     }
   ]
 }

@@ -121,7 +121,13 @@
       ],
       "bottom_exit": "opening",
       "prisoner_npc": "bjorn",
-      "prisoner_reward": "healing_potion"
+      "prisoner_reward": "healing_potion",
+      "battle_maps": [
+        "dungeon_battle_screen_1"
+      ],
+      "soundtrack": [
+        "/audio/Ambient 18 Loop.mp3"
+      ]
     }
   ]
 }

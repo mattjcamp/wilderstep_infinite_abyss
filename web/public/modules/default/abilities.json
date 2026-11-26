@@ -20,9 +20,9 @@
       "icon": "detect_traps",
       "fx_id": null,
       "type": "class",
-      "description": "When a hidden trap comes into view, make an Intelligence save (d20 + INT vs the trap's DC, 12 by default) to spot it before stepping on it.",
+      "description": "Passive. When a hidden trap comes into view, this character makes an Intelligence save (d20 + INT vs the trap's DC, 12 by default) to spot it before anyone steps on it.",
       "duration": "permanent",
-      "party_effect": true,
+      "party_effect": false,
       "params": null
     },
     {

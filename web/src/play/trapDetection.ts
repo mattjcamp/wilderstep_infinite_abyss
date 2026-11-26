@@ -2,17 +2,15 @@
  * Detect Traps — an Intelligence save, rolled when a hidden trap comes
  * into a character's line of sight.
  *
- * While the party's Detect Traps effect is active, every living member
+ * Passive — there's nothing to switch on. Every living member
  * whose class grants the `detect_traps` ability (at or above its
  * `min_level`) rolls d20 + INT modifier against the trap's detection DC
  * the moment the trap enters the party's line of sight. Any success
  * spots it. A failed trap stays hidden; it gets another roll the next
  * time it comes back into view (not on every step it stays in view).
  *
- * Only characters with the ability can roll. If nobody in the roster
- * has it, the effect can't be switched on (the Party screen hides it)
- * and an effect left on in the save does nothing — see
- * `partyHasDetectTraps`.
+ * Only characters with the ability can roll; with nobody in the roster
+ * holding it, detection is off (`partyHasDetectTraps`).
  *
  * DC: the trap record's `params.detect_dc`, else TRAP_DETECT_DC.
  * Pure — the host (PlayHost) owns visibility, rendering and sound.
@@ -71,7 +69,7 @@ function hasDetectAbility(
 }
 
 /** True when any roster member (alive or not) has Detect Traps — the
- *  condition for the effect to exist at all. */
+ *  condition for detection (and spotted-trap markers) to be on. */
 export function partyHasDetectTraps(
   members: ReadonlyArray<DetectorMember>,
   characters: ReadonlyArray<DetectorCharacter>,

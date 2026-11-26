@@ -121059,7 +121059,10 @@
           }
         ]
       ],
-      "lighting": "darkness"
+      "lighting": "darkness",
+      "soundtrack": [
+        "/audio/Action 4 Loop.mp3"
+      ]
     },
     {
       "id": "cave_battle_screen",

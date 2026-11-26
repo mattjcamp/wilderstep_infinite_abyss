@@ -145,3 +145,17 @@ describe("SoundtrackPlayer fades", () => {
     expect(el.volume).toBeCloseTo(0.5, 2);
   });
 });
+
+describe("SoundtrackPlayer getPlaylist (battle-music swap)", () => {
+  it("returns a copy of the current playlist, so it can be restored", () => {
+    setPlaylist(["/audio/dungeon.mp3"]);
+    const before = Soundtrack.getPlaylist();
+    expect(before).toEqual(["/audio/dungeon.mp3"]);
+    setPlaylist(["/audio/battle.mp3"]);
+    expect(Soundtrack.getPlaylist()).toEqual(["/audio/battle.mp3"]);
+    // The remembered copy wasn't changed by the swap.
+    expect(before).toEqual(["/audio/dungeon.mp3"]);
+    setPlaylist(before);
+    expect(Soundtrack.getPlaylist()).toEqual(["/audio/dungeon.mp3"]);
+  });
+});
