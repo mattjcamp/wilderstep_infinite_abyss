@@ -1815,6 +1815,15 @@ export function PlayPartyScreenOverlay({
         setCastMessage(`Unknown spell: ${spellId}.`);
         return;
       }
+      // The dead can't cast — whichever screen the request came from
+      // (party Effects list or a character sheet).
+      const caster = liveSave.party.members.find((m) => m.id === casterId);
+      if (caster && caster.hp <= 0) {
+        const name =
+          state.characters.find((c) => c.id === casterId)?.name ?? casterId;
+        setCastMessage(`${name} is dead and can't cast spells.`);
+        return;
+      }
       if (spell.action === "apply_effect") {
         // Out-of-combat, `targeting` is a battle-only concern — a
         // spell like Light is `select_tile` in battle (place the orb
@@ -1860,7 +1869,7 @@ export function PlayPartyScreenOverlay({
         `${spell.name ?? spell.id} isn't wired up out of combat yet.`,
       );
     },
-    [state, applyLight, applyRepel, applyRecall],
+    [state, liveSave, applyLight, applyRepel, applyRecall],
   );
 
   // P closes the screen — same as the inspector-key shortcut that

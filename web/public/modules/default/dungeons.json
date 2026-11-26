@@ -85,7 +85,7 @@
           "id": "stone_halls_l1",
           "name": "Level 1",
           "depth": 1,
-          "style": "cavern"
+          "style": "dungeon"
         },
         {
           "id": "stone_halls_l2",

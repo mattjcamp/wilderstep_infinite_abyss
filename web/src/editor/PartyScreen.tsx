@@ -718,9 +718,11 @@ export function PartyScreen({
     // (class casting_type + level gate, same rule as the character
     // sheet) that can be cast outside battle. When several members
     // know it, the caster is whoever can afford it with the most MP
-    // left; the caster's name shows on the right.
+    // left; the caster's name shows on the right. The dead can't cast:
+    // a spell only fallen members know drops off the list.
     const spellCasters = new Map<string, PartyCharacterRef[]>();
     for (const m of members) {
+      if ((m.hp ?? 1) <= 0) continue;
       const klass = classById.get(m.class);
       const types = klass?.casting_type;
       if (!types || types.length === 0) continue;
@@ -762,6 +764,8 @@ export function PartyScreen({
     const seenAbilities = new Set(rows.map((r) => r.ability.id));
     const abilityById = new Map(abilities.map((a) => [a.id, a]));
     for (const m of members) {
+      // The dead can't use their abilities either.
+      if ((m.hp ?? 1) <= 0) continue;
       const granted = [
         ...(raceById.get(m.race)?.abilities ?? []),
         ...(classById.get(m.class)?.abilities ?? [])

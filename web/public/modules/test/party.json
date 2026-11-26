@@ -4,5 +4,27 @@
     "col": 5,
     "row": 75
   },
-  "avatar": "person/elf_male_villager_wealthy.png"
+  "avatar": "person/person_male_paladin.png",
+  "inventory": [
+    {
+      "item": "torch",
+      "charges": 2
+    },
+    {
+      "item": "rock",
+      "charges": 10
+    },
+    {
+      "item": "lockpick",
+      "charges": 2
+    },
+    {
+      "item": "camping_supplies",
+      "charges": 2
+    },
+    {
+      "item": "arrows",
+      "charges": 25
+    }
+  ]
 }
