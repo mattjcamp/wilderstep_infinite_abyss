@@ -86946,7 +86946,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": "elemental_spawn",
+            "spawn": "",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -137677,7 +137677,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "elemental_spawn",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -143233,7 +143233,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": "elemental_spawn",
+            "spawn": "",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -152440,7 +152440,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "elemental_spawn",
             "sprite": "map/grass.png",
             "tag": "map"
           },
