@@ -9674,6 +9674,8 @@ function buildDungeonCatalog(
     // A prior pass through this map() dropped the field silently,
     // which is why the halo never appeared.
     tint: e.tint,
+    // The dungeon's battle map for this group (or the encounter's own).
+    custom_map: e.custom_map ?? null,
   }));
   // The synthetic dungeon map record is structurally compatible with
   // PlayMapRecord — id / name / width / height / grid — and the cells

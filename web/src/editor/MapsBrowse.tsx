@@ -22,6 +22,7 @@
  * Carries the same draft → publish flow every other model uses.
  */
 
+import { inheritedRecords, ownRecordsAfterEdit } from "@/data_model/ownRecords";
 import { editorMapHref } from "./moduleRoutes";
 import {
   DraftBanner,
@@ -117,6 +118,9 @@ type LoadState =
       /** Pinned tag paths, in display order (maps.json `tag_order`,
        *  or the PINNED_TAGS default when the file doesn't set one). */
       tagOrder: string[];
+      /** Maps inherited from parents + libraries — saves keep only
+       *  maps that differ from these (see ownRecordsAfterEdit). */
+      inherited: MapRecord[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -201,6 +205,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         kind: "ok",
         palette,
         maps,
+        inherited: inheritedRecords<MapRecord>(mapsLayers.inherited, "maps"),
         catalog,
         tagOrder: effectiveTagOrder(mapsMerged),
         ownFile: ownEffective ?? null,
@@ -299,7 +304,10 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     const baseFile: Record<string, unknown> = state.ownFile
       ? { ...state.ownFile }
       : { maps: [] };
-    if (patch.maps) baseFile.maps = patch.maps;
+    // Own maps + inherited ones changed here — never a frozen copy of
+    // every inherited map (which stopped parent edits reaching this
+    // module).
+    if (patch.maps) baseFile.maps = ownRecordsAfterEdit(patch.maps, state.inherited);
     if (patch.tag_order) baseFile.tag_order = patch.tag_order;
     try {
       await saveDraft(moduleId, MODEL_KEY, baseFile);

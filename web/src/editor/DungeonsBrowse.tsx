@@ -22,6 +22,7 @@
  * Same draft / publish / export flow as the rest of the editor.
  */
 
+import { inheritedRecords, ownRecordsAfterEdit } from "@/data_model/ownRecords";
 import {
   DraftBanner,
   deleteRecordConfirmMessage,
@@ -151,6 +152,9 @@ interface DungeonLevel {
   /** Encounter theme override for this floor; inherits the parent's
    *  when undefined. */
   theme?: string;
+  /** Battle-map override for this floor (arena map ids); inherits the
+   *  parent's when undefined. */
+  battle_maps?: string[];
   size?: DungeonSize;
   torch_density?: number;
   locked_doors?: number;
@@ -183,6 +187,10 @@ interface DungeonRecord {
   /** Encounter theme. When set, the generator only spawns encounters
    *  of this theme (empty / absent → any). */
   theme?: string;
+  /** Arena maps (tagged `battle_screen_arena`) fights in this dungeon
+   *  run on — one is picked per monster group. Empty → each
+   *  encounter's own `custom_map`, else the default arena. */
+  battle_maps?: string[];
   size: DungeonSize;
   torch_density: number;
   locked_doors: number;
@@ -256,6 +264,11 @@ type LoadState =
       keyItems: Array<{ id: string; name: string }>;
       npcs: Array<{ id: string; name: string; counter?: string }>;
       allItems: Array<ChestItem>;
+      /** Maps tagged `battle_screen_arena` — the battle-map choices. */
+      arenaMaps: ArenaMapChoice[];
+      /** Dungeons inherited from `extends` parents + `uses` libraries —
+       *  saves keep only records that differ from these. */
+      inherited: DungeonRecord[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -295,7 +308,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = getEditorModuleSource();
-      const [layers, catalog, itemLayers, trapLayers, npcLayers] = await Promise.all([
+      const [layers, catalog, itemLayers, trapLayers, npcLayers, mapLayers] = await Promise.all([
         src.loadModelLayers(moduleId, "dungeons"),
         // Dungeons offered by `uses` libraries. Not part of the
         // resolved view — the import section below copies them in.
@@ -307,6 +320,8 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         src.loadModelLayers(moduleId, "traps"),
         // NPCs — the trader / prisoner pickers.
         src.loadModelLayers(moduleId, "npcs"),
+        // Maps — the arena choices for the battle-map picker.
+        src.loadModelLayers(moduleId, "maps").catch(() => null),
       ]);
       const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
@@ -368,11 +383,25 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
           item_type: it.item_type != null ? String(it.item_type) : undefined,
         }))
         .filter((it) => it.id !== "");
+      const mapsMerged = mapLayers
+        ? (mergeModel(
+            "maps",
+            mapLayers.inherited,
+            mapLayers.ownFile as Record<string, unknown> | null,
+          ) as { maps?: Array<Record<string, unknown>> } | null)
+        : null;
+      const arenaMaps: ArenaMapChoice[] = (mapsMerged?.maps ?? [])
+        .filter((m) => Array.isArray(m.tags) && m.tags.includes(ARENA_TAG))
+        .map((m) => ({ id: String(m.id ?? ""), name: String(m.name ?? m.id ?? "") }))
+        .filter((m) => m.id !== "")
+        .sort((a, b) => a.name.localeCompare(b.name));
       setState({
         kind: "ok",
         dungeons,
         catalog,
         chestItems,
+        arenaMaps,
+        inherited: inheritedRecords<DungeonRecord>(layers.inherited, "dungeons"),
         trapChoices,
         keyItems,
         npcs,
@@ -431,7 +460,10 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
     const baseFile: Record<string, unknown> = state.ownFile
       ? { ...state.ownFile }
       : { dungeons: [] };
-    baseFile.dungeons = updated;
+    // Own file = own dungeons + inherited ones actually changed here.
+    // (Writing the whole merged list froze copies of every inherited
+    // dungeon, so later edits in Default / libraries never arrived.)
+    baseFile.dungeons = ownRecordsAfterEdit(updated, state.inherited);
     // saveDraft is async — fire-and-forget; the React state update
     // below is what UI reads. See CharactersBrowse.persist comment.
     void saveDraft(moduleId, MODEL_KEY, baseFile);
@@ -779,6 +811,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
                       dungeon={d}
                       existingTags={allTags}
                       chestItems={state.chestItems}
+                      arenaMaps={state.arenaMaps}
                       onUpdate={(patch) => onUpdateDungeon(d.id, patch)}
                       onAddLevel={() => onAddLevel(d.id)}
                       onUpdateLevel={(idx, patch) =>
@@ -898,6 +931,7 @@ function DungeonEditor({
   dungeon,
   existingTags,
   chestItems,
+  arenaMaps,
   onUpdate,
   onAddLevel,
   onUpdateLevel,
@@ -906,6 +940,7 @@ function DungeonEditor({
   dungeon: DungeonRecord;
   existingTags: string[];
   chestItems: Array<ChestItem>;
+  arenaMaps: ArenaMapChoice[];
   onUpdate: (patch: Partial<DungeonRecord>) => void;
   onAddLevel: () => void;
   onUpdateLevel: (idx: number, patch: Partial<DungeonLevel>) => void;
@@ -1016,6 +1051,12 @@ function DungeonEditor({
         allowInherit={false}
       />
 
+      <BattleMapsField
+        value={dungeon.battle_maps}
+        arenaMaps={arenaMaps}
+        onChange={(v) => onUpdate({ battle_maps: v })}
+      />
+
       {/* Bottom-floor way out — dungeon-wide (only the bottom floor
           gets it), so it lives here rather than in the per-level
           generator fields. */}
@@ -1060,6 +1101,7 @@ function DungeonEditor({
               parent={dungeon}
               existingTags={existingTags}
               chestItems={chestItems}
+              arenaMaps={arenaMaps}
               onUpdate={(patch) => onUpdateLevel(i, patch)}
               onDelete={() => onDeleteLevel(i)}
             />
@@ -1086,6 +1128,7 @@ function LevelRow({
   parent,
   existingTags,
   chestItems,
+  arenaMaps,
   onUpdate,
   onDelete,
 }: {
@@ -1093,6 +1136,7 @@ function LevelRow({
   parent: DungeonRecord;
   existingTags: string[];
   chestItems: Array<ChestItem>;
+  arenaMaps: ArenaMapChoice[];
   onUpdate: (patch: Partial<DungeonLevel>) => void;
   onDelete: () => void;
 }) {
@@ -1196,6 +1240,13 @@ function LevelRow({
           }
           allowInherit={true}
         />
+        <BattleMapsField
+          value={level.battle_maps}
+          arenaMaps={arenaMaps}
+          isLevel
+          parentValue={parent.battle_maps}
+          onChange={(v) => onUpdate({ battle_maps: v })}
+        />
       </div>
 
       <div className="mt-2 flex justify-end">
@@ -1208,6 +1259,125 @@ function LevelRow({
         </button>
       </div>
     </li>
+  );
+}
+
+// ── Battle maps (arena maps fights in this dungeon run on) ─────────
+
+/** Arena map ids must carry this tag (same rule as `custom_map`). */
+const ARENA_TAG = "battle_screen_arena";
+
+interface ArenaMapChoice {
+  id: string;
+  name: string;
+}
+
+/**
+ * Chips + add-dropdown for `battle_maps`. On the Dungeon, empty = no
+ * override (encounters' own `custom_map`, else the default arena). On
+ * a Level (`isLevel`), undefined = inherit the Dungeon's list (shown
+ * dimmed); "↩ Inherit" clears the override.
+ */
+function BattleMapsField({
+  value,
+  arenaMaps,
+  isLevel = false,
+  parentValue,
+  onChange,
+}: {
+  value: string[] | undefined;
+  arenaMaps: ArenaMapChoice[];
+  /** True on Level rows (inherit / override semantics). */
+  isLevel?: boolean;
+  /** Level rows: the Dungeon's list, shown while inheriting. */
+  parentValue?: string[];
+  onChange: (v: string[] | undefined) => void;
+}) {
+  const inheriting = isLevel && value === undefined;
+  const shown = inheriting ? parentValue ?? [] : value ?? [];
+  const nameOf = (id: string) => arenaMaps.find((m) => m.id === id)?.name;
+  const addable = arenaMaps.filter((m) => !shown.includes(m.id));
+  const set = (next: string[]) =>
+    onChange(next.length === 0 && !isLevel ? undefined : next);
+  return (
+    <div className="mt-3">
+      <div className="flex items-center gap-2">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
+          Battle maps
+        </span>
+        {isLevel && !inheriting ? (
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            className="text-[11px] text-parchment/55 underline decoration-dotted hover:text-parchment"
+            title="Drop this floor's override and use the Dungeon's battle maps."
+          >
+            ↩ Inherit
+          </button>
+        ) : null}
+      </div>
+      <div className="mt-1 flex flex-wrap items-center gap-1">
+        {shown.length === 0 ? (
+          <span className="text-[13px] text-parchment/55">
+            {inheriting
+              ? "(inherit — none: each encounter's own map, else the default arena)"
+              : isLevel
+                ? "None on this floor — each encounter's own map, else the default arena."
+                : "None — each encounter's own map, else the default arena."}
+          </span>
+        ) : (
+          shown.map((id) => (
+            <span
+              key={id}
+              className={[
+                "flex items-center gap-1 rounded border px-1.5 py-0.5 text-[13px]",
+                inheriting
+                  ? "border-parchment/15 text-parchment/55"
+                  : nameOf(id)
+                    ? "border-parchment/30 text-parchment/90"
+                    : "border-amber-300/50 text-amber-200/90",
+              ].join(" ")}
+              title={nameOf(id) ? id : `${id} — not a battle_screen_arena map in this module`}
+            >
+              {nameOf(id) ?? `${id} (missing)`}
+              {!inheriting ? (
+                <button
+                  type="button"
+                  onClick={() => set(shown.filter((x) => x !== id))}
+                  className="text-parchment/55 hover:text-parchment"
+                  aria-label={`Remove ${nameOf(id) ?? id}`}
+                >
+                  ✕
+                </button>
+              ) : null}
+            </span>
+          ))
+        )}
+        {addable.length > 0 ? (
+          <select
+            value=""
+            onChange={(e) => {
+              if (!e.target.value) return;
+              set([...(inheriting ? [] : shown), e.target.value]);
+            }}
+            className="rounded border border-parchment/20 bg-ink/50 px-1 py-0.5 text-[13px] text-parchment/90"
+            title="Add an arena map. With several, each fight picks one."
+          >
+            <option value="">{inheriting ? "+ Override…" : "+ Add…"}</option>
+            {addable.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        ) : null}
+      </div>
+      <span className="mt-1 block text-xs text-parchment/65">
+        {arenaMaps.length === 0
+          ? 'No maps tagged "battle_screen_arena" in this module yet — tag an 18×16 arena map to offer it here.'
+          : "Fights in this dungeon run on one of these arena maps, chosen per monster group. They replace the encounters' own battle maps."}
+      </span>
+    </div>
   );
 }
 

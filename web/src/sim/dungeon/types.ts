@@ -99,6 +99,11 @@ export interface DungeonLevelRecord {
    *  set, the generator only spawns encounters of this theme here.
    *  Inherits the parent dungeon's theme when absent. */
   theme?: string;
+  /** Arena map ids (maps tagged `battle_screen_arena`) this floor's
+   *  fights run on — one picked per monster group, stable for that
+   *  group. A Level's list replaces the Dungeon's; empty / absent → each
+   *  encounter's own `custom_map`, else the default arena. */
+  battle_maps?: string[];
   size?: DungeonSize;
   /** 0–1 probability per eligible wall tile. */
   torch_density?: number;
@@ -168,6 +173,11 @@ export interface DungeonRecord {
    *  band has none of that theme. Absent / empty → any theme. Levels
    *  override per-floor. */
   theme?: string;
+  /** Arena map ids (maps tagged `battle_screen_arena`) this floor's
+   *  fights run on — one picked per monster group, stable for that
+   *  group. A Level's list replaces the Dungeon's; empty / absent → each
+   *  encounter's own `custom_map`, else the default arena. */
+  battle_maps?: string[];
   size?: DungeonSize;
   torch_density?: number;
   locked_doors?: number;
@@ -275,6 +285,8 @@ export interface ResolvedLevelOptions {
    *  theme restriction; otherwise the generator only spawns encounters
    *  whose `theme` matches. */
   theme: string;
+  /** Resolved battle maps (level ⊕ parent), cleaned. Empty = none. */
+  battleMaps: string[];
   size: DungeonSize;
   /** 0–1 — passed through losslessly today; the v1 generator's
    *  banded TorchDensity is computed inside the wrapper. */

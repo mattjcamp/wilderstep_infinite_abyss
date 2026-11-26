@@ -13,6 +13,7 @@
  * through the existing draft → publish pipeline.
  */
 
+import { inheritedRecords, ownRecordsAfterEdit } from "@/data_model/ownRecords";
 import {
   DraftBanner,
   deleteRecordConfirmMessage,
@@ -72,6 +73,9 @@ type LoadState =
        *  list the spells this character knows (filtered by class
        *  casting_type + min_level). */
       spells: PartySpellRef[];
+      /** Characters inherited from parents + libraries — saves keep
+       *  only records that differ from these (see ownRecordsAfterEdit). */
+      inherited: CharacterRecord[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -152,6 +156,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
       setState({
         kind: "ok",
         characters,
+        inherited: inheritedRecords<CharacterRecord>(charactersLayers.inherited, "characters"),
         races,
         classes,
         abilities,
@@ -185,7 +190,9 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
     const baseFile: Record<string, unknown> = state.ownFile
       ? { ...state.ownFile }
       : { characters: [] };
-    baseFile.characters = updated;
+    // Own characters + inherited ones changed here — never a frozen
+    // copy of every inherited character.
+    baseFile.characters = ownRecordsAfterEdit(updated, state.inherited);
     void saveDraft(moduleId, MODEL_KEY, baseFile);
     setState({
       ...state,

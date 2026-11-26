@@ -251,6 +251,8 @@ export function dungeonEncounterRefs(
   name: string;
   monster_party_tile?: string;
   monsters: string[];
+  /** Arena map for this group's fight (DungeonMonster.customMap). */
+  custom_map?: string;
   /** Optional tint (RGB, e.g. 0xffe580) applied on top of the
    *  cell's lighting tint at render time. Used to flag quest-target
    *  placements with a soft gold halo — the renderer multiplies
@@ -290,6 +292,7 @@ export function dungeonEncounterRefs(
       // ambient still reads as "tinted yellow" rather than
       // washing out the underlying sprite.
       tint: m.questName ? 0xffe580 : undefined,
+      custom_map: m.customMap,
     };
   });
 }

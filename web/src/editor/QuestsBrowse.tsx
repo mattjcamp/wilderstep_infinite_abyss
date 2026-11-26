@@ -17,6 +17,7 @@
  * Same draft / publish / export flow as the rest of the editor.
  */
 
+import { inheritedRecords, ownRecordsAfterEdit } from "@/data_model/ownRecords";
 import { LorePicker } from "./LorePicker";
 import {
   DraftBanner,
@@ -300,6 +301,9 @@ type LoadState =
       dungeons: DungeonSummary[];
       encounters: EncounterPickerEntry[];
       npcs: NpcSummary[];
+      /** Quests inherited from parents + libraries — saves keep only
+       *  records that differ from these (see ownRecordsAfterEdit). */
+      inherited: QuestRecord[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -440,6 +444,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
       setState({
         kind: "ok",
         quests,
+        inherited: inheritedRecords<QuestRecord>(questsLayers.inherited, "quests"),
         catalog,
         items,
         maps,
@@ -497,7 +502,9 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
     const baseFile: Record<string, unknown> = state.ownFile
       ? { ...state.ownFile }
       : { quests: [] };
-    baseFile.quests = updated;
+    // Own quests + inherited ones changed here — never a frozen copy
+    // of every inherited quest.
+    baseFile.quests = ownRecordsAfterEdit(updated, state.inherited);
     // saveDraft is async — fire-and-forget; see CharactersBrowse.persist.
     void saveDraft(moduleId, MODEL_KEY, baseFile);
     setState({

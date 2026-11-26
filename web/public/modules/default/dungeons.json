@@ -5,7 +5,9 @@
       "id": "hidden_grotto",
       "name": "Hidden Grotto",
       "description": "An old forgotten grotto hidden deep in the mountain",
-      "tags": [],
+      "tags": [
+        "Natural Caves"
+      ],
       "style": "cavern",
       "difficulty": "normal",
       "size": {
@@ -19,7 +21,7 @@
           "id": "hidden_grotto_l1",
           "name": "Level 1",
           "depth": 1,
-          "style": "volcanic"
+          "style": "cavern"
         },
         {
           "id": "hidden_grotto_l2",
@@ -55,13 +57,21 @@
           "weight": 1
         }
       ],
-      "bottom_exit": "opening"
+      "bottom_exit": "opening",
+      "battle_maps": [
+        "cave_battle_screen"
+      ],
+      "soundtrack": [
+        "/audio/Ambient 1 Loop.mp3"
+      ]
     },
     {
       "id": "stone_halls",
       "name": "Stone Halls",
       "description": "Torch-lit halls of fitted stone, built by hands long gone.",
-      "tags": [],
+      "tags": [
+        "Keep"
+      ],
       "style": "dungeon",
       "difficulty": "normal",
       "size": {

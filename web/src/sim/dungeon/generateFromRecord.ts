@@ -164,6 +164,7 @@ export function generateDungeonFromRecord(
         floorIdx === totalFloors - 1 ? (record.prisoner_npc ?? "").trim() || undefined : undefined,
       seed,
     });
+    stampBattleMaps(raw, resolved.battleMaps, opts.encounters);
     out.push(normaliseAuthoredHeight(raw, resolved.size.height));
   }
   // Pit falls: each pit on a floor that drops through gets a landing
@@ -330,6 +331,65 @@ function normaliseAuthoredHeight(
  * a defensive default from `DUNGEON_DEFAULTS` so the dungeon still
  * generates instead of crashing.
  */
+/** Trimmed, de-duplicated non-empty strings from an authored id list. */
+function cleanIdList(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  const out: string[] = [];
+  for (const x of v) {
+    if (typeof x !== "string") continue;
+    const s = x.trim();
+    if (s && !out.includes(s)) out.push(s);
+  }
+  return out;
+}
+
+/** Small stable string hash → non-negative int. */
+function hashId(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/**
+ * Give every monster group on the floor the battle map its fight runs
+ * on (`DungeonMonster.customMap`):
+ *   - the dungeon's battle maps, when set — one per group, picked by a
+ *     hash of the group's id (stable across re-entry, no RNG draw, so
+ *     layouts for a seed are unchanged);
+ *   - otherwise the sampled encounter's own arena (`custom_map` /
+ *     `arena_id`), so authored per-encounter arenas now apply inside
+ *     dungeons too;
+ *   - otherwise nothing (the host falls back to the default arena).
+ */
+function stampBattleMaps(
+  level: DungeonLevel,
+  battleMaps: ReadonlyArray<string>,
+  encounters: GenerateFromRecordOptions["encounters"],
+): void {
+  let ownArena: Map<string, string> | null = null;
+  if (battleMaps.length === 0 && encounters) {
+    ownArena = new Map();
+    for (const list of Object.values(encounters)) {
+      for (const e of list ?? []) {
+        const r = e as unknown as { id?: string; arenaId?: string; arena_id?: string; custom_map?: string | null };
+        const arena = r.arenaId || r.custom_map || r.arena_id;
+        if (r.id && typeof arena === "string" && arena) ownArena.set(r.id, arena);
+      }
+    }
+  }
+  for (const m of level.monsters) {
+    if (battleMaps.length > 0) {
+      m.customMap = battleMaps[hashId(m.id) % battleMaps.length];
+    } else if (ownArena && m.encounterId) {
+      const arena = ownArena.get(m.encounterId);
+      if (arena) m.customMap = arena;
+    }
+  }
+}
+
 export function resolveLevelOptions(
   parent: DungeonRecord,
   level: DungeonLevelRecord,
@@ -348,6 +408,8 @@ export function resolveLevelOptions(
   // Encounter theme: level override wins, else the parent's, else "" (no
   // restriction). Trimmed so a stray whitespace value reads as "any".
   const theme = (level.theme ?? parent.theme ?? DUNGEON_DEFAULTS.theme).trim();
+  // Battle maps: a Level's list replaces the parent's (like trap_types).
+  const battleMaps = cleanIdList(level.battle_maps ?? parent.battle_maps);
   // Clamped so a bad authored value (negative, zero, huge, fractional)
   // still yields a playable floor instead of an undrawable map.
   const size = clampDungeonSize(
@@ -415,6 +477,7 @@ export function resolveLevelOptions(
     style,
     difficulty,
     theme,
+    battleMaps,
     size,
     torch_density,
     locked_doors,

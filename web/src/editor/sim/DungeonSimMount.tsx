@@ -402,6 +402,7 @@ export function DungeonSimMount({
       name: e.name,
       monster_party_tile: e.monster_party_tile,
       monsters: e.monsters,
+      custom_map: e.custom_map ?? null,
     }));
   }, [levels, floorIdx, catalog]);
 

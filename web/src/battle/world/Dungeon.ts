@@ -206,6 +206,11 @@ export interface DungeonMonster {
    *  procedural runtime path doesn't need it — only `dungeonBake`
    *  consumes it today. */
   encounterId?: string;
+  /** Arena map id (maps tagged `battle_screen_arena`) this group's
+   *  fight runs on — from the dungeon's `battle_maps`, else the
+   *  encounter's own `custom_map`. Stamped by `generateDungeonFromRecord`;
+   *  absent → the default arena. */
+  customMap?: string;
   /**
    * Quest this monster was placed for. Set by the dungeon's
    * quest-spawn pass for kill-step targets (e.g. Goblin's Nest's
