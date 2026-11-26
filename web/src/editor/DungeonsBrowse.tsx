@@ -6,14 +6,16 @@
  * the MapsBrowse shape (tag-tree, draft → publish flow) but with
  * inline child-level editing instead of a navigation hop:
  *
- *   - Dungeons grouped by tag. Untagged dungeons land in "(untagged)".
- *   - Each dungeon row can be expanded to edit its metadata (name,
- *     description, tags) and the generator's defaults (style,
- *     difficulty, size, torch_density, locked_doors), plus manage its
- *     `levels[]` array.
+ *   - Laid out like the Dungeon Simulator: a picker toolbar (dungeons
+ *     grouped by tag in the dropdown; untagged land in "(untagged)")
+ *     over the selected dungeon's editor.
+ *   - The editor's core is a spreadsheet-style Floors grid: the top
+ *     row holds the dungeon's generator defaults, each row below is a
+ *     `levels[]` entry, one column per generator parameter. List-valued
+ *     cells (trap mix, battle maps, tags) open an editor under the grid.
  *   - Dungeon Levels are inline objects under their parent's
  *     `levels[]` — there is no top-level Dungeon Level catalog. Add /
- *     edit / delete happens inside the expanded parent row.
+ *     edit / delete happens in the Floors grid.
  *   - Each Level can override any of the parent's generator
  *     parameters. The UI surfaces inherited values as placeholders so
  *     the author can see what they'd get without leaving an override
@@ -28,7 +30,9 @@ import {
   deleteRecordConfirmMessage,
   discardDraftConfirmMessage,
 } from "./editorShell";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { editorDungeonSimHref } from "./moduleRoutes";
 import {
   discardDraft,
   downloadJson,
@@ -44,7 +48,6 @@ import { SoundtrackPicker } from "./SoundtrackPicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 import {
-  clampDungeonSize,
   DUNGEON_DEFAULTS,
   DUNGEON_SIZE_MAX,
   DUNGEON_SIZE_MIN,
@@ -63,7 +66,7 @@ const UNTAGGED = "(untagged)";
  *  optgroups. */
 /** A traps.json record offered by the trap-mix picker. */
 type TrapChoice = { id: string; name: string };
-/** Trap records visible to this module — read by GeneratorFields so
+/** Trap records visible to this module — read by the trap-mix field so
  *  the picker doesn't need threading through every row component. */
 const TrapChoicesContext = createContext<TrapChoice[]>([]);
 /** Module id + key-type items, for the room-role fields (vault key,
@@ -302,7 +305,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [selectedId, setSelectedId] = useState<string>("");
 
   // ── Load dungeons (draft-aware) ────────────────────────────────
   const refresh = async () => {
@@ -479,7 +482,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
     if (state.kind !== "ok") return;
     persist([...state.dungeons, rec]);
     setCreating(false);
-    setExpanded((prev) => new Set(prev).add(rec.id));
+    setSelectedId(rec.id);
   };
 
   /**
@@ -673,26 +676,21 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
     }))
     .filter((entry) => entry.records.length > 0);
 
-  const toggleExpanded = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const current =
+    state.dungeons.find((d) => d.id === selectedId) ?? state.dungeons[0] ?? null;
 
   return (
     <div className="p-4">
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl text-parchment">Dungeons</h1>
+          <h1 className="font-display text-3xl text-parchment">Dungeon Editor</h1>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/80">
             <span>
               {state.dungeons.length} dungeon
               {state.dungeons.length === 1 ? "" : "s"}
             </span>
             <span className="text-parchment/60">·</span>
-            <span>{FILE_NAME}</span>
+            <span className="font-mono">modules/{moduleId}/{FILE_NAME}</span>
             {state.isDraft ? (
               <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
                 draft active
@@ -701,15 +699,6 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!creating ? (
-            <button
-              type="button"
-              onClick={() => setCreating(true)}
-              className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-sm text-parchment hover:bg-ember/50"
-            >
-              + New Dungeon
-            </button>
-          ) : null}
           {state.isDraft ? (
             <button
               type="button"
@@ -741,6 +730,64 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
       </header>
       {state.isDraft ? <DraftBanner /> : null}
 
+      {/* Picker toolbar — same shape as the Dungeon Simulator's. */}
+      <section className="mt-4 flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs uppercase tracking-wide text-parchment/65">
+            Dungeon
+          </label>
+          <select
+            value={current?.id ?? ""}
+            onChange={(e) => setSelectedId(e.target.value)}
+            disabled={state.dungeons.length === 0}
+            className="min-w-[260px] rounded border border-parchment/30 bg-ink/60 px-2 py-1 text-sm text-parchment focus:border-parchment/60 focus:outline-none"
+          >
+            {state.dungeons.length === 0 ? (
+              <option value="">(no dungeons)</option>
+            ) : (
+              [...groupedByTag.entries()].map(([tag, ds]) => (
+                <optgroup key={tag} label={tag}>
+                  {ds.map((d) => (
+                    <option key={`${tag}::${d.id}`} value={d.id}>
+                      {d.name} — {d.levels?.length ?? 0} floor
+                      {(d.levels?.length ?? 0) === 1 ? "" : "s"}
+                    </option>
+                  ))}
+                </optgroup>
+              ))
+            )}
+          </select>
+        </div>
+        {!creating ? (
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-sm text-parchment hover:bg-ember/50"
+          >
+            + New Dungeon
+          </button>
+        ) : null}
+        {current ? (
+          <>
+            <Link
+              href={editorDungeonSimHref(moduleId, { id: current.id })}
+              className="rounded border border-parchment/30 px-3 py-1 text-sm text-parchment/90 hover:bg-ink/40"
+              title="Open this dungeon in the Dungeon Simulator. The simulator reads the published file — publish a draft first to test your edits."
+            >
+              ▶ Walk it in the Simulator
+            </Link>
+            <button
+              type="button"
+              onClick={() => onDeleteDungeon(current.id)}
+              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+              title="Delete this dungeon and all its floors."
+            >
+              Delete dungeon
+            </button>
+          </>
+        ) : null}
+      </section>
+
       {creating ? (
         <div className="mt-4">
           <NewDungeonForm
@@ -756,81 +803,23 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         value={{ moduleId, keyItems: state.keyItems, npcs: state.npcs, allItems: state.allItems }}
       >
       <TrapChoicesContext.Provider value={state.trapChoices}>
-      <div className="mt-6 space-y-5">
-        {[...groupedByTag.entries()].map(([tag, dungeons]) => (
-          <section key={tag}>
-            <h2 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/65">
-              {tag}
-              <span className="ml-2 text-parchment/55 normal-case tracking-normal">
-                ({dungeons.length})
-              </span>
-            </h2>
-            <ul className="space-y-2">
-              {dungeons.map((d) => (
-                <li
-                  key={`${tag}::${d.id}`}
-                  className="overflow-hidden rounded border border-parchment/10 bg-ink/20"
-                >
-                  <div className="flex items-center justify-between gap-3 px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleExpanded(d.id)}
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm text-parchment hover:text-parchment/100"
-                    >
-                      <span className="text-parchment/75">
-                        {expanded.has(d.id) ? "▾" : "▸"}
-                      </span>
-                      <span className="font-display">{d.name}</span>
-                      <span className="font-mono text-[13px] text-parchment/65">
-                        {d.id}
-                      </span>
-                      <span className="text-[13px] text-parchment/65">
-                        · {d.levels?.length ?? 0} level
-                        {(d.levels?.length ?? 0) === 1 ? "" : "s"}
-                      </span>
-                      <span className="text-[13px] text-parchment/65">
-                        · {d.style} · {d.difficulty}
-                      </span>
-                      {Array.isArray(d.tags) && d.tags.length > 1 ? (
-                        <span className="text-[13px] text-parchment/60">
-                          · also: {d.tags.filter((t) => t !== tag).join(", ")}
-                        </span>
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteDungeon(d.id)}
-                      className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
-                      title="Delete this dungeon."
-                    >
-                      Delete
-                    </button>
-                  </div>
-                  {expanded.has(d.id) ? (
-                    <DungeonEditor
-                      dungeon={d}
-                      existingTags={allTags}
-                      chestItems={state.chestItems}
-                      arenaMaps={state.arenaMaps}
-                      onUpdate={(patch) => onUpdateDungeon(d.id, patch)}
-                      onAddLevel={() => onAddLevel(d.id)}
-                      onUpdateLevel={(idx, patch) =>
-                        onUpdateLevel(d.id, idx, patch)
-                      }
-                      onDeleteLevel={(idx) => onDeleteLevel(d.id, idx)}
-                    />
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-        {state.dungeons.length === 0 ? (
-          <p className="text-sm text-parchment/75">
+        {current ? (
+          <DungeonEditor
+            key={current.id}
+            dungeon={current}
+            existingTags={allTags}
+            chestItems={state.chestItems}
+            arenaMaps={state.arenaMaps}
+            onUpdate={(patch) => onUpdateDungeon(current.id, patch)}
+            onAddLevel={() => onAddLevel(current.id)}
+            onUpdateLevel={(idx, patch) => onUpdateLevel(current.id, idx, patch)}
+            onDeleteLevel={(idx) => onDeleteLevel(current.id, idx)}
+          />
+        ) : (
+          <p className="mt-6 text-sm text-parchment/75">
             No dungeons yet. Click <strong>+ New Dungeon</strong> to create one.
           </p>
-        ) : null}
-      </div>
+        )}
       </TrapChoicesContext.Provider>
       </RoomRoleContext.Provider>
 
@@ -925,7 +914,28 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   );
 }
 
-// ── Inline editor for a single dungeon (metadata + generator params + levels) ─
+// ── Editor for the selected dungeon: details, floors grid, dungeon-wide ─
+
+/** Boxed section — same frame as the Simulator's floors preview. */
+function Panel({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded border border-parchment/15 bg-ink/40 p-3">
+      <h2 className="text-[13px] uppercase tracking-wide text-parchment/75">
+        {title}
+      </h2>
+      {hint ? <p className="mb-2 text-xs text-parchment/60">{hint}</p> : null}
+      <div className={hint ? "" : "mt-2"}>{children}</div>
+    </section>
+  );
+}
 
 function DungeonEditor({
   dungeon,
@@ -947,318 +957,887 @@ function DungeonEditor({
   onDeleteLevel: (idx: number) => void;
 }) {
   return (
-    <div className="border-t border-parchment/10 bg-ink/10 px-3 py-3">
-      {/* Identity + tags */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/65">
-            Name
-          </span>
-          <input
-            type="text"
-            value={dungeon.name}
-            onChange={(e) => onUpdate({ name: e.target.value })}
-            className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90"
-          />
-        </label>
-        <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/65">
-            Description
-          </span>
-          <input
-            type="text"
-            value={dungeon.description ?? ""}
-            onChange={(e) => onUpdate({ description: e.target.value })}
-            className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90"
-          />
-        </label>
-      </div>
-      <div className="mt-3">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Tags
-        </span>
-        <TagsPicker
-          tags={dungeon.tags ?? []}
-          existing={existingTags}
-          onChange={(tags) => onUpdate({ tags })}
-        />
-      </div>
-
-      {/* Soundtrack override — picks tracks from /audio/index.json
-          with preview + reorder. Empty inherits the module-level
-          default playlist. */}
-      <div className="mt-3">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Soundtrack
-        </span>
-        <div className="mt-1">
-          <SoundtrackPicker
-            value={dungeon.soundtrack ?? []}
-            onChange={(list) =>
-              onUpdate({
-                soundtrack: list.length > 0 ? list : undefined,
-              })
-            }
-            emptyHint="Inherits the module-level playlist."
-          />
+    <div className="mt-4 space-y-4">
+      <Panel title="Details">
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="space-y-2">
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
+                  Name
+                </span>
+                <input
+                  type="text"
+                  value={dungeon.name}
+                  onChange={(e) => onUpdate({ name: e.target.value })}
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90"
+                />
+              </label>
+              <div>
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
+                  ID
+                </span>
+                <div className="mt-0.5 px-1 py-1 font-mono text-[13px] text-parchment/60">
+                  {dungeon.id}
+                </div>
+              </div>
+            </div>
+            <label className="block">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
+                Description
+              </span>
+              <textarea
+                rows={2}
+                value={dungeon.description ?? ""}
+                onChange={(e) => onUpdate({ description: e.target.value })}
+                className="mt-0.5 w-full resize-y rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90"
+              />
+            </label>
+            <div>
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
+                Tags
+              </span>
+              <TagsPicker
+                tags={dungeon.tags ?? []}
+                existing={existingTags}
+                onChange={(tags) => onUpdate({ tags })}
+              />
+            </div>
+          </div>
+          <div>
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
+              Soundtrack
+            </span>
+            <div className="mt-1">
+              <SoundtrackPicker
+                value={dungeon.soundtrack ?? []}
+                onChange={(list) =>
+                  onUpdate({ soundtrack: list.length > 0 ? list : undefined })
+                }
+                emptyHint="Inherits the module-level playlist."
+              />
+            </div>
+          </div>
         </div>
-        <span className="mt-1 block text-xs text-parchment/65">
-          Per-dungeon playlist override. Empty inherits the module
-          default.
-        </span>
+      </Panel>
+
+      <FloorsGrid
+        dungeon={dungeon}
+        existingTags={existingTags}
+        chestItems={chestItems}
+        arenaMaps={arenaMaps}
+        onUpdate={onUpdate}
+        onAddLevel={onAddLevel}
+        onUpdateLevel={onUpdateLevel}
+        onDeleteLevel={onDeleteLevel}
+      />
+
+      <Panel
+        title="Whole dungeon"
+        hint="Settings that apply once per dungeon rather than per floor."
+      >
+        <label className="block max-w-xl">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
+            Exit on bottom floor
+          </span>
+          <select
+            value={
+              !dungeon.bottom_exit || dungeon.bottom_exit === "none"
+                ? "none"
+                : "opening"
+            }
+            onChange={(e) => {
+              const v = e.target.value as "none" | "opening";
+              onUpdate({ bottom_exit: v === "none" ? undefined : v });
+            }}
+            className="mt-0.5 block w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+          >
+            <option value="none">None — leave by climbing back up</option>
+            <option value="opening">Opening to daylight</option>
+          </select>
+          <span className="mt-1 block text-xs text-parchment/65">
+            Cuts a broken opening with daylight beyond into the top wall of
+            the bottom floor&apos;s last room. Stepping into it asks the
+            player before leaving.
+          </span>
+        </label>
+        <RoomRoleFields dungeon={dungeon} onUpdate={onUpdate} />
+      </Panel>
+    </div>
+  );
+}
+
+// ── Floors grid: one row of defaults + one row per floor ──────────────
+
+type GridRow =
+  | { kind: "dungeon"; rec: DungeonRecord }
+  | { kind: "level"; rec: DungeonLevel; idx: number };
+
+/** Numeric knobs edited as plain number cells. */
+type NumKey =
+  | "torch_density"
+  | "locked_doors"
+  | "doors"
+  | "pits"
+  | "traps"
+  | "objects"
+  | "floor_variety"
+  | "wall_decor"
+  | "loops"
+  | "room_roles"
+  | "chest_frequency";
+
+const DIAL_KEYS = [
+  "objects",
+  "floor_variety",
+  "wall_decor",
+  "loops",
+  "room_roles",
+] as const;
+type DialKey = (typeof DIAL_KEYS)[number];
+const isDialKey = (k: NumKey): k is DialKey =>
+  (DIAL_KEYS as readonly string[]).includes(k);
+
+function ownNum(
+  rec: DungeonRecord | DungeonLevel,
+  key: NumKey,
+): number | undefined {
+  if (key === "chest_frequency") return rec.loot?.chest_frequency;
+  return (rec as DungeonLevel)[key];
+}
+
+/** What the generator uses when neither the floor nor the dungeon sets it. */
+function baseNum(key: NumKey, style: string | undefined): number {
+  if (isDialKey(key)) return STYLE_DEFAULTS[normalizeDungeonStyle(style)][key];
+  if (key === "chest_frequency") return DUNGEON_DEFAULTS.loot.chest_frequency;
+  return DUNGEON_DEFAULTS[key];
+}
+
+function numPatch(
+  rec: DungeonRecord | DungeonLevel,
+  key: NumKey,
+  v: number | undefined,
+): Record<string, unknown> {
+  if (key === "chest_frequency") {
+    return { loot: mergeLoot(rec.loot, { chest_frequency: v }) };
+  }
+  return { [key]: v };
+}
+
+/** Keys on a Level that are identity, not generator overrides. */
+const LEVEL_IDENTITY_KEYS = new Set(["id", "name", "depth", "tags"]);
+function overrideCount(level: DungeonLevel): number {
+  return Object.entries(level).filter(
+    ([k, v]) => !LEVEL_IDENTITY_KEYS.has(k) && v !== undefined,
+  ).length;
+}
+
+const CELL =
+  "w-full min-w-0 bg-transparent px-1.5 py-1 outline-none focus:bg-ink focus:ring-1 focus:ring-inset focus:ring-ember/70";
+const NO_SPIN =
+  "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+
+/** Text colour for a cell: ember = this floor overrides, parchment =
+ *  set on the dungeon row, dim = inherited / default. */
+function cellTone(isLevel: boolean, set: boolean): string {
+  if (!set) return "text-parchment/45";
+  return isLevel ? "text-ember" : "text-parchment";
+}
+
+function ClearOverride({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      tabIndex={-1}
+      title="Clear this override (inherit the dungeon's value)."
+      className="absolute left-0.5 top-1/2 hidden -translate-y-1/2 rounded bg-ink px-0.5 text-[11px] text-parchment/60 hover:text-parchment group-hover:block"
+    >
+      ↩
+    </button>
+  );
+}
+
+function NumCell({
+  value,
+  fallback,
+  isLevel,
+  step = 0.05,
+  min = 0,
+  max = 1,
+  integer = false,
+  onChange,
+}: {
+  value: number | undefined;
+  fallback: number;
+  isLevel: boolean;
+  step?: number;
+  min?: number;
+  max?: number;
+  integer?: boolean;
+  onChange: (v: number | undefined) => void;
+}) {
+  const bad =
+    value !== undefined &&
+    (value < min || value > max || (integer && !Number.isInteger(value)));
+  return (
+    <div className="group relative">
+      <input
+        type="number"
+        step={step}
+        min={min}
+        max={max}
+        value={value ?? ""}
+        placeholder={String(fallback)}
+        title={bad ? `Expected ${min}–${max}${integer ? " (whole number)" : ""}.` : undefined}
+        onChange={(e) => {
+          const v = e.target.value === "" ? NaN : Number(e.target.value);
+          onChange(Number.isFinite(v) ? v : undefined);
+        }}
+        className={`${CELL} ${NO_SPIN} text-right placeholder:text-parchment/35 ${cellTone(isLevel, value !== undefined)} ${bad ? "bg-amber-500/15 ring-1 ring-inset ring-amber-300/70" : ""}`}
+      />
+      {isLevel && value !== undefined ? (
+        <ClearOverride onClick={() => onChange(undefined)} />
+      ) : null}
+    </div>
+  );
+}
+
+function SelectCell({
+  value,
+  emptyLabel,
+  isLevel,
+  title,
+  onChange,
+  children,
+}: {
+  value: string | undefined;
+  /** Label of the blank option (inherit / default); null = no blank. */
+  emptyLabel: string | null;
+  isLevel: boolean;
+  title?: string;
+  onChange: (v: string | undefined) => void;
+  children: ReactNode;
+}) {
+  const set = value !== undefined && value !== "";
+  return (
+    <select
+      value={value ?? ""}
+      title={title}
+      onChange={(e) => onChange(e.target.value === "" ? undefined : e.target.value)}
+      className={`${CELL} cursor-pointer [&>*]:bg-ink [&>*]:text-parchment ${cellTone(isLevel, set || emptyLabel === null)}`}
+    >
+      {emptyLabel !== null ? <option value="">{emptyLabel}</option> : null}
+      {children}
+    </select>
+  );
+}
+
+type DrawerField = "trap_types" | "battle_maps" | "tags";
+const DRAWER_LABELS: Record<DrawerField, string> = {
+  trap_types: "Trap types",
+  battle_maps: "Battle maps",
+  tags: "Tags",
+};
+
+interface GridCol {
+  key: string;
+  group: string;
+  label: string;
+  hint: string;
+  /** Min width in px. */
+  w: number;
+  cell: (row: GridRow) => ReactNode;
+}
+
+const DASH = <span className="block px-1.5 py-1 text-parchment/25">—</span>;
+
+function FloorsGrid({
+  dungeon,
+  existingTags,
+  chestItems,
+  arenaMaps,
+  onUpdate,
+  onAddLevel,
+  onUpdateLevel,
+  onDeleteLevel,
+}: {
+  dungeon: DungeonRecord;
+  existingTags: string[];
+  chestItems: Array<ChestItem>;
+  arenaMaps: ArenaMapChoice[];
+  onUpdate: (patch: Partial<DungeonRecord>) => void;
+  onAddLevel: () => void;
+  onUpdateLevel: (idx: number, patch: Partial<DungeonLevel>) => void;
+  onDeleteLevel: (idx: number) => void;
+}) {
+  const trapChoices = useContext(TrapChoicesContext);
+  /** Open list editor: row -1 = the dungeon (defaults) row. */
+  const [drawer, setDrawer] = useState<{ row: number; field: DrawerField } | null>(null);
+  const levels = dungeon.levels ?? [];
+  const rows: GridRow[] = [
+    { kind: "dungeon", rec: dungeon },
+    ...levels.map((rec, idx) => ({ kind: "level" as const, rec, idx })),
+  ];
+  const rowNum = (r: GridRow) => (r.kind === "dungeon" ? -1 : r.idx);
+  const rowLabel = (r: GridRow) =>
+    r.kind === "dungeon" ? "All floors (defaults)" : `Floor ${r.idx + 1} — ${r.rec.name}`;
+  const isLevel = (r: GridRow) => r.kind === "level";
+  const update = (r: GridRow, patch: Record<string, unknown>) =>
+    r.kind === "dungeon"
+      ? onUpdate(patch as Partial<DungeonRecord>)
+      : onUpdateLevel(r.idx, patch as Partial<DungeonLevel>);
+  const styleOf = (r: GridRow) =>
+    r.kind === "dungeon" ? r.rec.style : (r.rec.style ?? dungeon.style);
+  /** Blank-option label: "↳ value" on floors (inherit), "value" on the
+   *  dungeon row (generator default). */
+  const blank = (r: GridRow, inherited: string, dungeonDefault: string) =>
+    r.kind === "level" ? `↳ ${inherited}` : dungeonDefault;
+
+  const trapName = (id: string) => trapChoices.find((c) => c.id === id)?.name ?? id;
+  const describeTraps = (list: TrapPick[] | undefined) =>
+    list && list.length > 0
+      ? list.map((p) => `${trapName(p.trap_id)}${(p.weight ?? 1) !== 1 ? ` ×${p.weight}` : ""}`).join(", ")
+      : trapName(DEFAULT_TRAP_ID);
+  const mapName = (id: string) => arenaMaps.find((m) => m.id === id)?.name ?? id;
+  const describeMaps = (list: string[] | undefined) =>
+    list && list.length > 0 ? list.map(mapName).join(", ") : "encounter's own";
+  const chestName = (id: string | undefined) => (id ? chestLabel(chestItems, id) : "none");
+
+  const drawerCell = (
+    r: GridRow,
+    field: DrawerField,
+    text: string,
+    set: boolean,
+  ) => {
+    const active = drawer?.row === rowNum(r) && drawer.field === field;
+    return (
+      <button
+        type="button"
+        onClick={() => setDrawer(active ? null : { row: rowNum(r), field })}
+        title={`${text} — click to edit`}
+        className={`flex w-full items-center gap-1 px-1.5 py-1 text-left hover:bg-parchment/5 ${active ? "bg-ember/20 ring-1 ring-inset ring-ember/70" : ""} ${cellTone(isLevel(r), set)}`}
+      >
+        <span className="min-w-0 flex-1 truncate">{text}</span>
+        <span className="text-[10px] text-parchment/40">{active ? "▴" : "▾"}</span>
+      </button>
+    );
+  };
+
+  const num = (
+    key: NumKey,
+    group: string,
+    label: string,
+    hint: string,
+  ): GridCol => ({
+    key,
+    group,
+    label,
+    hint,
+    w: 64,
+    cell: (r) => (
+      <NumCell
+        value={ownNum(r.rec, key)}
+        fallback={
+          r.kind === "dungeon"
+            ? baseNum(key, styleOf(r))
+            : (ownNum(dungeon, key) ?? baseNum(key, styleOf(r)))
+        }
+        isLevel={isLevel(r)}
+        onChange={(v) => update(r, numPatch(r.rec, key, v))}
+      />
+    ),
+  });
+
+  const sizeCol = (dim: "width" | "height", label: string): GridCol => ({
+    key: `size_${dim}`,
+    group: "Layout",
+    label,
+    hint: `Floor ${dim} in tiles (${DUNGEON_SIZE_MIN}–${DUNGEON_SIZE_MAX}).`,
+    w: 56,
+    cell: (r) => {
+      const own = r.rec.size;
+      const other = dim === "width" ? "height" : "width";
+      const parentDim = dungeon.size?.[dim] ?? DUNGEON_DEFAULTS.size[dim];
+      return (
+        <NumCell
+          value={own?.[dim]}
+          fallback={r.kind === "dungeon" ? DUNGEON_DEFAULTS.size[dim] : parentDim}
+          isLevel={isLevel(r)}
+          step={1}
+          min={DUNGEON_SIZE_MIN}
+          max={DUNGEON_SIZE_MAX}
+          integer
+          onChange={(v) => {
+            if (v === undefined) {
+              update(r, { size: undefined });
+              return;
+            }
+            const otherV =
+              own?.[other] ??
+              (r.kind === "level" ? dungeon.size?.[other] : undefined) ??
+              DUNGEON_DEFAULTS.size[other];
+            update(r, { size: { [dim]: v, [other]: otherV } as unknown as DungeonSize });
+          }}
+        />
+      );
+    },
+  });
+
+  const cols: GridCol[] = [
+    // ── Floor identity (floors only) ──
+    {
+      key: "id",
+      group: "Floor",
+      label: "ID",
+      hint: "Level id — referenced by quests and saves.",
+      w: 170,
+      cell: (r) =>
+        r.kind === "dungeon" ? (
+          DASH
+        ) : (
+          <input
+            type="text"
+            value={r.rec.id}
+            onChange={(e) => update(r, { id: e.target.value })}
+            className={`${CELL} font-mono text-parchment/85`}
+          />
+        ),
+    },
+    {
+      key: "name",
+      group: "Floor",
+      label: "Name",
+      hint: "Floor name shown to the player.",
+      w: 140,
+      cell: (r) =>
+        r.kind === "dungeon" ? (
+          DASH
+        ) : (
+          <input
+            type="text"
+            value={r.rec.name}
+            onChange={(e) => update(r, { name: e.target.value })}
+            className={`${CELL} text-parchment/90`}
+          />
+        ),
+    },
+    {
+      key: "depth",
+      group: "Floor",
+      label: "Depth",
+      hint: "How deep this floor is.",
+      w: 52,
+      cell: (r) =>
+        r.kind === "dungeon" ? (
+          DASH
+        ) : (
+          <input
+            type="number"
+            value={r.rec.depth}
+            onChange={(e) => update(r, { depth: Number(e.target.value) || 0 })}
+            className={`${CELL} ${NO_SPIN} text-right text-parchment/90`}
+          />
+        ),
+    },
+    {
+      key: "tags",
+      group: "Floor",
+      label: "Tags",
+      hint: "Tags on this floor.",
+      w: 90,
+      cell: (r) =>
+        r.kind === "dungeon"
+          ? DASH
+          : drawerCell(
+              r,
+              "tags",
+              r.rec.tags?.length ? r.rec.tags.join(", ") : "—",
+              false,
+            ),
+    },
+    // ── Layout ──
+    {
+      key: "style",
+      group: "Layout",
+      label: "Style",
+      hint: "Tileset / generator theme.",
+      w: 130,
+      cell: (r) => (
+        <SelectCell
+          value={r.rec.style}
+          emptyLabel={r.kind === "level" ? `↳ ${dungeon.style.replace(/_/g, " ")}` : null}
+          isLevel={isLevel(r)}
+          title={STYLE_LABELS[(r.rec.style ?? dungeon.style) as Style]}
+          onChange={(v) => update(r, { style: v ?? (r.kind === "dungeon" ? dungeon.style : undefined) })}
+        >
+          {STYLES.map((s) => (
+            <option key={s} value={s}>
+              {s.replace(/_/g, " ")}
+            </option>
+          ))}
+          {r.rec.style && !STYLES.includes(r.rec.style as Style) ? (
+            <option value={r.rec.style}>{r.rec.style} (unsupported)</option>
+          ) : null}
+        </SelectCell>
+      ),
+    },
+    sizeCol("width", "W"),
+    sizeCol("height", "H"),
+    num("loops", "Layout", "Loops", "Extra corridors joining nearby rooms, so floors have circuits instead of dead ends."),
+    {
+      key: "edge_transitions",
+      group: "Layout",
+      label: "Stairs at",
+      hint: "Entrance / exit placement: edge of the map or inside rooms.",
+      w: 92,
+      cell: (r) => {
+        const own = r.rec.edge_transitions;
+        const parent = (dungeon.edge_transitions ?? false) ? "edge" : "rooms";
+        return (
+          <SelectCell
+            value={own === undefined ? undefined : own ? "edge" : "rooms"}
+            emptyLabel={blank(r, parent, "rooms")}
+            isLevel={isLevel(r)}
+            onChange={(v) => update(r, { edge_transitions: v === undefined ? undefined : v === "edge" })}
+          >
+            <option value="edge">edge</option>
+            <option value="rooms">rooms</option>
+          </SelectCell>
+        );
+      },
+    },
+    // ── Encounters ──
+    {
+      key: "difficulty",
+      group: "Encounters",
+      label: "Difficulty",
+      hint: "Monster difficulty pulled onto the floor (any = ignore).",
+      w: 96,
+      cell: (r) => (
+        <SelectCell
+          value={r.rec.difficulty}
+          emptyLabel={r.kind === "level" ? `↳ ${dungeon.difficulty}` : null}
+          isLevel={isLevel(r)}
+          onChange={(v) => update(r, { difficulty: v ?? (r.kind === "dungeon" ? dungeon.difficulty : undefined) })}
+        >
+          {DIFFICULTIES.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+          {r.rec.difficulty && !DIFFICULTIES.includes(r.rec.difficulty as Difficulty) ? (
+            <option value={r.rec.difficulty}>{r.rec.difficulty} (custom)</option>
+          ) : null}
+        </SelectCell>
+      ),
+    },
+    {
+      key: "theme",
+      group: "Encounters",
+      label: "Theme",
+      hint: "Only spawn encounters of this theme. Blank = any.",
+      w: 96,
+      cell: (r) => (
+        <SelectCell
+          value={r.rec.theme}
+          emptyLabel={blank(r, dungeon.theme || "any", "any")}
+          isLevel={isLevel(r)}
+          onChange={(v) => update(r, { theme: v })}
+        >
+          {THEMES.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+          {r.rec.theme && !THEMES.includes(r.rec.theme as (typeof THEMES)[number]) ? (
+            <option value={r.rec.theme}>{r.rec.theme} (custom)</option>
+          ) : null}
+        </SelectCell>
+      ),
+    },
+    {
+      key: "battle_maps",
+      group: "Encounters",
+      label: "Battle maps",
+      hint: "Arena maps fights on this floor run on. Click to edit.",
+      w: 120,
+      cell: (r) => {
+        const own = r.rec.battle_maps;
+        if (r.kind === "level" && own === undefined) {
+          return drawerCell(r, "battle_maps", `↳ ${describeMaps(dungeon.battle_maps)}`, false);
+        }
+        return drawerCell(r, "battle_maps", describeMaps(own), !!own && (own.length > 0 || r.kind === "level"));
+      },
+    },
+    // ── Doors & light ──
+    num("torch_density", "Doors & light", "Torches", "Torch density (0–1)."),
+    num("doors", "Doors & light", "Doors", "Chance each room opening gets a door (0–1)."),
+    num("locked_doors", "Doors & light", "Locked", "Chance a door is locked (0–1)."),
+    // ── Hazards ──
+    num("traps", "Hazards", "Traps", "Chance each room past the entrance gets one hidden trap (0–1)."),
+    {
+      key: "trap_types",
+      group: "Hazards",
+      label: "Trap types",
+      hint: "Weighted mix of traps.json records. Click to edit.",
+      w: 120,
+      cell: (r) => {
+        const own = r.rec.trap_types;
+        if (r.kind === "level" && own === undefined) {
+          return drawerCell(r, "trap_types", `↳ ${describeTraps(dungeon.trap_types)}`, false);
+        }
+        return drawerCell(r, "trap_types", describeTraps(own), !!own && own.length > 0);
+      },
+    },
+    num("pits", "Hazards", "Pits", "Chance each room past the entrance gets a pit (0–1)."),
+    {
+      key: "pit_falls",
+      group: "Hazards",
+      label: "Pits drop",
+      hint: "Pits drop the party to the floor below (light damage) vs solid chasms.",
+      w: 76,
+      cell: (r) => {
+        const own = r.rec.pit_falls;
+        return (
+          <SelectCell
+            value={own === undefined ? undefined : own ? "yes" : "no"}
+            emptyLabel={blank(r, (dungeon.pit_falls ?? true) ? "yes" : "no", "yes")}
+            isLevel={isLevel(r)}
+            onChange={(v) => update(r, { pit_falls: v === undefined ? undefined : v === "yes" })}
+          >
+            <option value="yes">yes</option>
+            <option value="no">no</option>
+          </SelectCell>
+        );
+      },
+    },
+    // ── Dressing ──
+    num("objects", "Dressing", "Objects", "Pillars / stalagmites / rubble in rooms (0–1). Never blocks a route."),
+    num("floor_variety", "Dressing", "Floor var.", "Alternate floors: per room (dungeon) or patches (cavern) (0–1)."),
+    num("wall_decor", "Dressing", "Wall decor", "Banners, windows, cracks, crystals, webs on wall faces (0–1)."),
+    num("room_roles", "Dressing", "Room roles", "Chance each room is furnished (storeroom, library, shrine, vault…) (0–1)."),
+    // ── Loot ──
+    {
+      key: "chest_item",
+      group: "Loot",
+      label: "Chest",
+      hint: "Chest item placed in rooms. None = no chests.",
+      w: 140,
+      cell: (r) => {
+        const own = r.rec.loot?.chest_item;
+        return (
+          <SelectCell
+            value={own}
+            emptyLabel={blank(r, chestName(dungeon.loot?.chest_item), "none")}
+            isLevel={isLevel(r)}
+            onChange={(v) => update(r, { loot: mergeLoot(r.rec.loot, { chest_item: v }) })}
+          >
+            {groupItemsByCategory(chestItems).map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.items.map((it) => (
+                  <option key={it.id} value={it.id}>
+                    {it.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+            {own && !chestItems.some((it) => it.id === own) ? (
+              <option value={own}>{own} (missing)</option>
+            ) : null}
+          </SelectCell>
+        );
+      },
+    },
+    num("chest_frequency", "Loot", "Chest %", "Chance per room of a chest (0–1)."),
+  ];
+
+  // Group header spans (consecutive columns sharing a group).
+  const groups: Array<{ label: string; span: number }> = [];
+  for (const c of cols) {
+    const last = groups[groups.length - 1];
+    if (last && last.label === c.group) last.span += 1;
+    else groups.push({ label: c.group, span: 1 });
+  }
+
+  const HEAD_BG = "bg-[#232339]";
+  const TH = `border-b border-r border-parchment/10 ${HEAD_BG} px-1.5 py-1 text-left font-normal`;
+  const openRow =
+    drawer && drawer.row < levels.length ? rows[drawer.row + 1] : null;
+
+  return (
+    <Panel
+      title={`Floors (${levels.length})`}
+      hint={
+        <>
+          The top row holds the dungeon&apos;s defaults; each floor below
+          inherits them (dim <span className="text-parchment/45">↳</span>{" "}
+          values) unless it sets its own —{" "}
+          <span className="text-ember">ember</span> cells are per-floor
+          overrides. Clear a cell (or hover and click ↩) to inherit again.
+        </>
+      }
+    >
+      <div className="overflow-x-auto rounded border border-parchment/15">
+        <table className="border-separate border-spacing-0 text-[13px]">
+          <thead>
+            <tr>
+              <th
+                rowSpan={2}
+                className={`${TH} sticky left-0 z-20 min-w-[124px] align-bottom text-xs uppercase tracking-wide text-parchment/60`}
+              >
+                Floor
+              </th>
+              {groups.map((g) => (
+                <th
+                  key={g.label}
+                  colSpan={g.span}
+                  className={`${TH} text-[11px] uppercase tracking-wide text-parchment/50`}
+                >
+                  {g.label}
+                </th>
+              ))}
+              <th rowSpan={2} className={`${TH} border-r-0`} />
+            </tr>
+            <tr>
+              {cols.map((c) => (
+                <th
+                  key={c.key}
+                  title={c.hint}
+                  style={{ minWidth: c.w }}
+                  className={`${TH} cursor-help whitespace-nowrap text-xs text-parchment/75`}
+                >
+                  {c.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const isDefaults = r.kind === "dungeon";
+              const bg = isDefaults
+                ? "bg-[#29293f]"
+                : r.idx % 2 === 0
+                  ? "bg-[#1a1a2e]"
+                  : "bg-[#1e1e33]";
+              const border = isDefaults
+                ? "border-b-2 border-b-parchment/25"
+                : "border-b border-b-parchment/10";
+              const n = r.kind === "level" ? overrideCount(r.rec) : 0;
+              return (
+                <tr key={isDefaults ? "__defaults" : `${r.idx}`} className={bg}>
+                  <td className={`sticky left-0 z-10 ${bg} ${border} border-r border-r-parchment/15 px-2 py-1`}>
+                    {isDefaults ? (
+                      <>
+                        <div className="font-display text-parchment">All floors</div>
+                        <div className="text-[11px] text-parchment/50">defaults</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="whitespace-nowrap text-parchment/90">
+                          Floor {r.idx + 1}
+                        </div>
+                        <div className={`text-[11px] ${n > 0 ? "text-ember/90" : "text-parchment/40"}`}>
+                          {n > 0 ? `${n} override${n === 1 ? "" : "s"}` : "inherits all"}
+                        </div>
+                      </>
+                    )}
+                  </td>
+                  {cols.map((c) => (
+                    <td
+                      key={c.key}
+                      className={`${border} border-r border-r-parchment/10 p-0 align-middle`}
+                      style={{ minWidth: c.w, maxWidth: c.w * 1.6 }}
+                    >
+                      {c.cell(r)}
+                    </td>
+                  ))}
+                  <td className={`${border} px-1 text-center`}>
+                    {r.kind === "level" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDrawer(null);
+                          onDeleteLevel(r.idx);
+                        }}
+                        title={`Delete floor ${r.idx + 1}`}
+                        className="rounded px-1.5 text-parchment/45 hover:bg-ember/30 hover:text-parchment"
+                      >
+                        ✕
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              );
+            })}
+            {levels.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={cols.length + 2}
+                  className="px-3 py-3 text-[13px] text-parchment/60"
+                >
+                  No floors yet — the dungeon needs at least one to generate.
+                  Click <strong>+ Add floor</strong> below.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </div>
 
-      {/* Generator defaults — required on Dungeon, inherited by Levels */}
-      <h3 className="mt-4 text-[13px] uppercase tracking-wide text-parchment/75">
-        Generator defaults
-      </h3>
-      <p className="text-xs text-parchment/65">
-        These values drive procedural floor generation. Each Dungeon Level
-        below can override any of them; an empty override on a Level means
-        "inherit from this Dungeon."
-      </p>
-      <GeneratorFields
-        style={dungeon.style}
-        difficulty={dungeon.difficulty}
-        theme={dungeon.theme}
-        size={dungeon.size}
-        torchDensity={dungeon.torch_density}
-        lockedDoors={dungeon.locked_doors}
-        doors={dungeon.doors}
-        pits={dungeon.pits}
-        dials={dialsOf(dungeon)}
-        edgeTransitions={dungeon.edge_transitions}
-        chestItems={chestItems}
-        chestItem={dungeon.loot?.chest_item}
-        chestFrequency={dungeon.loot?.chest_frequency}
-        onStyle={(v) => onUpdate({ style: v })}
-        onDifficulty={(v) => onUpdate({ difficulty: v })}
-        onTheme={(v) => onUpdate({ theme: v })}
-        onSize={(v) => onUpdate({ size: v })}
-        onTorchDensity={(v) => onUpdate({ torch_density: v })}
-        onLockedDoors={(v) => onUpdate({ locked_doors: v })}
-        onDoors={(v) => onUpdate({ doors: v })}
-        onPits={(v) => onUpdate({ pits: v })}
-        onDial={(key, v) => onUpdate({ [key]: v } as Partial<DungeonRecord>)}
-        onEdgeTransitions={(v) => onUpdate({ edge_transitions: v })}
-        onChestItem={(v) =>
-          onUpdate({ loot: mergeLoot(dungeon.loot, { chest_item: v }) })
-        }
-        onChestFrequency={(v) =>
-          onUpdate({ loot: mergeLoot(dungeon.loot, { chest_frequency: v }) })
-        }
-        // Dungeon side is required — no clear/inherit affordance.
-        allowInherit={false}
-      />
-
-      <BattleMapsField
-        value={dungeon.battle_maps}
-        arenaMaps={arenaMaps}
-        onChange={(v) => onUpdate({ battle_maps: v })}
-      />
-
-      {/* Bottom-floor way out — dungeon-wide (only the bottom floor
-          gets it), so it lives here rather than in the per-level
-          generator fields. */}
-      <label className="mt-2 block">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Exit on bottom floor
-        </span>
-        <select
-          value={!dungeon.bottom_exit || dungeon.bottom_exit === "none" ? "none" : "opening"}
-          onChange={(e) => {
-            const v = e.target.value as "none" | "opening";
-            onUpdate({ bottom_exit: v === "none" ? undefined : v });
-          }}
-          className="mt-0.5 block w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-        >
-          <option value="none">None — leave by climbing back up</option>
-          <option value="opening">Opening to daylight</option>
-        </select>
-        <span className="mt-1 block text-xs text-parchment/65">
-          Cuts a broken opening with daylight beyond into the top wall of
-          the bottom floor&apos;s last room. Stepping into it tells the
-          player it leaves the area and asks before leaving.
-        </span>
-      </label>
-
-      <RoomRoleFields dungeon={dungeon} onUpdate={onUpdate} />
-
-      {/* Levels list */}
-      <h3 className="mt-4 text-[13px] uppercase tracking-wide text-parchment/75">
-        Levels ({dungeon.levels?.length ?? 0})
-      </h3>
-      {(dungeon.levels ?? []).length === 0 ? (
-        <p className="mt-1 text-[13px] text-parchment/65">
-          No levels yet. Click <strong>+ Add Level</strong> below.
-        </p>
-      ) : (
-        <ul className="mt-2 space-y-2">
-          {(dungeon.levels ?? []).map((lvl, i) => (
-            <LevelRow
-              key={`${lvl.id}-${i}`}
-              level={lvl}
-              parent={dungeon}
-              existingTags={existingTags}
-              chestItems={chestItems}
+      {drawer && openRow ? (
+        <div className="mt-2 rounded border border-ember/40 bg-ink/60 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-[13px] uppercase tracking-wide text-parchment/75">
+              {rowLabel(openRow)} · {DRAWER_LABELS[drawer.field]}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setDrawer(null)}
+              className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/75 hover:text-parchment"
+            >
+              Done
+            </button>
+          </div>
+          {drawer.field === "trap_types" ? (
+            <div className="grid">
+              <TrapMixField
+                own={openRow.rec.trap_types}
+                parent={openRow.kind === "level" ? dungeon.trap_types : undefined}
+                allowInherit={openRow.kind === "level"}
+                onChange={(v) => update(openRow, { trap_types: v })}
+              />
+            </div>
+          ) : drawer.field === "battle_maps" ? (
+            <BattleMapsField
+              value={openRow.rec.battle_maps}
               arenaMaps={arenaMaps}
-              onUpdate={(patch) => onUpdateLevel(i, patch)}
-              onDelete={() => onDeleteLevel(i)}
+              isLevel={openRow.kind === "level"}
+              parentValue={dungeon.battle_maps}
+              onChange={(v) => update(openRow, { battle_maps: v })}
             />
-          ))}
-        </ul>
-      )}
-      <div className="mt-3">
+          ) : openRow.kind === "level" ? (
+            <div className="mt-1">
+              <TagsPicker
+                tags={openRow.rec.tags ?? []}
+                existing={existingTags}
+                onChange={(tags) => update(openRow, { tags })}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="mt-2">
         <button
           type="button"
           onClick={onAddLevel}
           className="rounded border border-ember/50 bg-ember/20 px-2 py-1 text-[13px] text-parchment hover:bg-ember/40"
         >
-          + Add Level
+          + Add floor
         </button>
       </div>
-    </div>
-  );
-}
-
-// ── Single level row (identity + overrides) ─────────────────────────
-
-function LevelRow({
-  level,
-  parent,
-  existingTags,
-  chestItems,
-  arenaMaps,
-  onUpdate,
-  onDelete,
-}: {
-  level: DungeonLevel;
-  parent: DungeonRecord;
-  existingTags: string[];
-  chestItems: Array<ChestItem>;
-  arenaMaps: ArenaMapChoice[];
-  onUpdate: (patch: Partial<DungeonLevel>) => void;
-  onDelete: () => void;
-}) {
-  return (
-    <li className="rounded border border-parchment/10 bg-ink/30 p-2">
-      <div className="grid gap-2 sm:grid-cols-4">
-        <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/65">
-            ID
-          </span>
-          <input
-            type="text"
-            value={level.id}
-            onChange={(e) => onUpdate({ id: e.target.value })}
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
-          />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className="text-xs uppercase tracking-wide text-parchment/65">
-            Name
-          </span>
-          <input
-            type="text"
-            value={level.name}
-            onChange={(e) => onUpdate({ name: e.target.value })}
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          />
-        </label>
-        <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/65">
-            Depth
-          </span>
-          <input
-            type="number"
-            value={level.depth}
-            onChange={(e) =>
-              onUpdate({ depth: Number(e.target.value) || 0 })
-            }
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          />
-        </label>
-      </div>
-
-      <div className="mt-2">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Tags
-        </span>
-        <TagsPicker
-          tags={level.tags ?? []}
-          existing={existingTags}
-          onChange={(tags) => onUpdate({ tags })}
-        />
-      </div>
-
-      <div className="mt-3">
-        <p className="text-xs text-parchment/65">
-          Generator overrides — leave any field empty (or click ↩ Inherit)
-          to fall back to the parent Dungeon's value (shown in light text).
-        </p>
-        <GeneratorFields
-          style={level.style}
-          difficulty={level.difficulty}
-          theme={level.theme}
-          size={level.size}
-          torchDensity={level.torch_density}
-          lockedDoors={level.locked_doors}
-          doors={level.doors}
-          pits={level.pits}
-          dials={dialsOf(level)}
-          edgeTransitions={level.edge_transitions}
-          chestItems={chestItems}
-          chestItem={level.loot?.chest_item}
-          chestFrequency={level.loot?.chest_frequency}
-          parentStyle={parent.style}
-          parentDifficulty={parent.difficulty}
-          parentTheme={parent.theme}
-          parentSize={parent.size}
-          parentTorchDensity={parent.torch_density}
-          parentLockedDoors={parent.locked_doors}
-          parentDoors={parent.doors}
-          parentPits={parent.pits}
-          parentDials={dialsOf(parent)}
-          parentEdgeTransitions={parent.edge_transitions}
-          parentChestItem={parent.loot?.chest_item}
-          parentChestFrequency={parent.loot?.chest_frequency}
-          onStyle={(v) => onUpdate({ style: v })}
-          onDifficulty={(v) => onUpdate({ difficulty: v })}
-          onTheme={(v) => onUpdate({ theme: v })}
-          onSize={(v) => onUpdate({ size: v })}
-          onTorchDensity={(v) => onUpdate({ torch_density: v })}
-          onLockedDoors={(v) => onUpdate({ locked_doors: v })}
-          onDoors={(v) => onUpdate({ doors: v })}
-          onPits={(v) => onUpdate({ pits: v })}
-          onDial={(key, v) => onUpdate({ [key]: v } as Partial<DungeonLevel>)}
-          onEdgeTransitions={(v) => onUpdate({ edge_transitions: v })}
-          onChestItem={(v) =>
-            onUpdate({ loot: mergeLoot(level.loot, { chest_item: v }) })
-          }
-          onChestFrequency={(v) =>
-            onUpdate({ loot: mergeLoot(level.loot, { chest_frequency: v }) })
-          }
-          allowInherit={true}
-        />
-        <BattleMapsField
-          value={level.battle_maps}
-          arenaMaps={arenaMaps}
-          isLevel
-          parentValue={parent.battle_maps}
-          onChange={(v) => onUpdate({ battle_maps: v })}
-        />
-      </div>
-
-      <div className="mt-2 flex justify-end">
-        <button
-          type="button"
-          onClick={onDelete}
-          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
-        >
-          Delete level
-        </button>
-      </div>
-    </li>
+    </Panel>
   );
 }
 
@@ -1379,627 +1958,6 @@ function BattleMapsField({
       </span>
     </div>
   );
-}
-
-// ── Shared generator-parameter editor ───────────────────────────────
-
-function GeneratorFields({
-  style,
-  difficulty,
-  theme,
-  size,
-  torchDensity,
-  lockedDoors,
-  doors,
-  pits,
-  dials,
-  edgeTransitions,
-  chestItems,
-  chestItem,
-  chestFrequency,
-  parentStyle,
-  parentDifficulty,
-  parentTheme,
-  parentSize,
-  parentTorchDensity,
-  parentLockedDoors,
-  parentDoors,
-  parentPits,
-  parentDials,
-  parentEdgeTransitions,
-  parentChestItem,
-  parentChestFrequency,
-  onStyle,
-  onDifficulty,
-  onTheme,
-  onSize,
-  onTorchDensity,
-  onLockedDoors,
-  onDoors,
-  onPits,
-  onDial,
-  onEdgeTransitions,
-  onChestItem,
-  onChestFrequency,
-  allowInherit,
-}: {
-  // Effective (own) value; may be undefined on Level rows.
-  style: string | undefined;
-  difficulty: string | undefined;
-  theme: string | undefined;
-  size: DungeonSize | undefined;
-  torchDensity: number | undefined;
-  lockedDoors: number | undefined;
-  doors: number | undefined;
-  pits: number | undefined;
-  /** Own values of the dressing dials (undefined = inherit). */
-  dials: Dials;
-  /** Entrance/exit placement: true = edge, false = rooms, undefined =
-   *  inherit / style default. */
-  edgeTransitions: boolean | undefined;
-  /** Chest-item choices (items flagged is_chest) for the loot picker. */
-  chestItems: Array<ChestItem>;
-  chestItem: string | undefined;
-  chestFrequency: number | undefined;
-  // Parent values for placeholder fallback (only on Level rows).
-  parentStyle?: string;
-  parentDifficulty?: string;
-  parentTheme?: string;
-  parentSize?: DungeonSize;
-  parentTorchDensity?: number;
-  parentLockedDoors?: number;
-  parentDoors?: number;
-  parentPits?: number;
-  parentDials?: Dials;
-  parentEdgeTransitions?: boolean;
-  parentChestItem?: string;
-  parentChestFrequency?: number;
-  // Callbacks — receiving `undefined` clears the override (Level only).
-  onStyle: (v: string | undefined) => void;
-  onDifficulty: (v: string | undefined) => void;
-  onTheme: (v: string | undefined) => void;
-  onSize: (v: DungeonSize | undefined) => void;
-  onTorchDensity: (v: number | undefined) => void;
-  onLockedDoors: (v: number | undefined) => void;
-  onDoors: (v: number | undefined) => void;
-  onPits: (v: number | undefined) => void;
-  onDial: <K extends keyof Dials>(key: K, v: Dials[K]) => void;
-  onEdgeTransitions: (v: boolean | undefined) => void;
-  onChestItem: (v: string | undefined) => void;
-  onChestFrequency: (v: number | undefined) => void;
-  /** Whether the editor exposes an "inherit / clear override" affordance
-   *  per field. True on Levels, false on the parent Dungeon. */
-  allowInherit: boolean;
-}) {
-  // Effective entrance/exit placement when this field is left blank:
-  // the parent's value if set, else interior rooms.
-  const edgeDefault = parentEdgeTransitions ?? false;
-  const edgeDefaultLabel = edgeDefault ? "edge of map" : "in rooms";
-  return (
-    <div className="mt-2 grid gap-2 sm:grid-cols-4">
-      {/* Style */}
-      <label className="block">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Style
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <select
-            value={style ?? ""}
-            onChange={(e) =>
-              onStyle(e.target.value === "" ? undefined : e.target.value)
-            }
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          >
-            {allowInherit ? (
-              <option value="">
-                (inherit{parentStyle ? ` — ${parentStyle}` : ""})
-              </option>
-            ) : null}
-            {STYLES.map((s) => (
-              <option key={s} value={s}>
-                {STYLE_LABELS[s] ?? s}
-              </option>
-            ))}
-            {style && !STYLES.includes(style as Style) ? (
-              <option value={style}>{style} (unsupported — renders as dungeon)</option>
-            ) : null}
-          </select>
-        </div>
-      </label>
-
-      {/* Difficulty */}
-      <label className="block">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Difficulty
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <select
-            value={difficulty ?? ""}
-            onChange={(e) =>
-              onDifficulty(
-                e.target.value === "" ? undefined : e.target.value,
-              )
-            }
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          >
-            {allowInherit ? (
-              <option value="">
-                (inherit{parentDifficulty ? ` — ${parentDifficulty}` : ""})
-              </option>
-            ) : null}
-            {DIFFICULTIES.map((d) => (
-              <option key={d} value={d}>
-                {DIFFICULTY_LABELS[d] ?? d}
-              </option>
-            ))}
-            {difficulty &&
-            !DIFFICULTIES.includes(difficulty as Difficulty) ? (
-              <option value={difficulty}>{difficulty} (custom)</option>
-            ) : null}
-          </select>
-        </div>
-      </label>
-
-      {/* Theme — constrains which encounters the generator spawns.
-          Blank = any (on the parent) / inherit (on a level). */}
-      <label className="block">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Theme
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <select
-            value={theme ?? ""}
-            onChange={(e) =>
-              onTheme(e.target.value === "" ? undefined : e.target.value)
-            }
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-            title="Restrict procedurally-placed encounters to this theme. Blank = any theme."
-          >
-            <option value="">
-              {allowInherit
-                ? `(inherit${parentTheme ? ` — ${parentTheme}` : " — any"})`
-                : "(any)"}
-            </option>
-            {THEMES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-            {theme && !THEMES.includes(theme as (typeof THEMES)[number]) ? (
-              <option value={theme}>{theme} (custom)</option>
-            ) : null}
-          </select>
-        </div>
-      </label>
-
-      {/* Size — width × height */}
-      <div className="block sm:col-span-2">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Size (w × h)
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <input
-            type="number"
-            min={DUNGEON_SIZE_MIN}
-            max={DUNGEON_SIZE_MAX}
-            step={1}
-            value={size?.width ?? ""}
-            placeholder={parentSize ? String(parentSize.width) : "32"}
-            onChange={(e) => {
-              const w = e.target.value === "" ? NaN : Number(e.target.value);
-              if (Number.isFinite(w)) {
-                onSize({
-                  width: w,
-                  height: size?.height ?? parentSize?.height ?? 0,
-                });
-              } else if (size?.height == null) {
-                onSize(undefined);
-              } else {
-                // Width cleared but height was set; collapse to undefined
-                // to fully inherit, OR keep partial state. Choose the
-                // former for simplicity — partial states confuse the
-                // generator.
-                onSize(undefined);
-              }
-            }}
-            className="w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          />
-          <span className="text-parchment/60">×</span>
-          <input
-            type="number"
-            min={DUNGEON_SIZE_MIN}
-            max={DUNGEON_SIZE_MAX}
-            step={1}
-            value={size?.height ?? ""}
-            placeholder={parentSize ? String(parentSize.height) : "32"}
-            onChange={(e) => {
-              const h = e.target.value === "" ? NaN : Number(e.target.value);
-              if (Number.isFinite(h)) {
-                onSize({
-                  width: size?.width ?? parentSize?.width ?? 0,
-                  height: h,
-                });
-              } else if (size?.width == null) {
-                onSize(undefined);
-              } else {
-                onSize(undefined);
-              }
-            }}
-            className="w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          />
-          {allowInherit && size !== undefined ? (
-            <InheritButton onClick={() => onSize(undefined)} />
-          ) : null}
-        </div>
-        {size && sizeOutOfRange(size) ? (
-          <span className="mt-1 block text-xs text-ember">
-            Floors must be {DUNGEON_SIZE_MIN}–{DUNGEON_SIZE_MAX} tiles per
-            side — this will generate as{" "}
-            {clampDungeonSize(size, size).width}×
-            {clampDungeonSize(size, size).height}.
-          </span>
-        ) : null}
-      </div>
-
-      {/* Torch density */}
-      <label className="block">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Torch density (0–1)
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <input
-            type="number"
-            step={0.05}
-            min={0}
-            max={1}
-            value={torchDensity ?? ""}
-            placeholder={
-              parentTorchDensity != null ? String(parentTorchDensity) : "0.15"
-            }
-            onChange={(e) => {
-              const v =
-                e.target.value === "" ? NaN : Number(e.target.value);
-              onTorchDensity(Number.isFinite(v) ? v : undefined);
-            }}
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          />
-          {allowInherit && torchDensity !== undefined ? (
-            <InheritButton onClick={() => onTorchDensity(undefined)} />
-          ) : null}
-        </div>
-      </label>
-
-      {/* Locked doors */}
-      <label className="block">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Locked doors (0–1)
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <input
-            type="number"
-            step={0.05}
-            min={0}
-            max={1}
-            value={lockedDoors ?? ""}
-            placeholder={
-              parentLockedDoors != null ? String(parentLockedDoors) : "0.25"
-            }
-            onChange={(e) => {
-              const v =
-                e.target.value === "" ? NaN : Number(e.target.value);
-              onLockedDoors(Number.isFinite(v) ? v : undefined);
-            }}
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          />
-          {allowInherit && lockedDoors !== undefined ? (
-            <InheritButton onClick={() => onLockedDoors(undefined)} />
-          ) : null}
-        </div>
-      </label>
-
-      {/* Doors — 0–1 chance each room opening gets a door. Default 1
-          (doors always); lower for open layouts. Applies to every
-          style. */}
-      <label className="block">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Doors (0–1)
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <input
-            type="number"
-            step={0.05}
-            min={0}
-            max={1}
-            value={doors ?? ""}
-            placeholder={parentDoors != null ? String(parentDoors) : "1"}
-            onChange={(e) => {
-              const v = e.target.value === "" ? NaN : Number(e.target.value);
-              onDoors(Number.isFinite(v) ? v : undefined);
-            }}
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          />
-          {allowInherit && doors !== undefined ? (
-            <InheritButton onClick={() => onDoors(undefined)} />
-          ) : null}
-        </div>
-      </label>
-
-      {/* Pits — 0–1 chance each room past the entrance gets a pit /
-          chasm. Default 0 (none). A pit always leaves a walkable ring
-          around it, so it never blocks a route. Applies to every style. */}
-      <label className="block">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Pits (0–1)
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <input
-            type="number"
-            step={0.05}
-            min={0}
-            max={1}
-            value={pits ?? ""}
-            placeholder={parentPits != null ? String(parentPits) : "0"}
-            onChange={(e) => {
-              const v = e.target.value === "" ? NaN : Number(e.target.value);
-              onPits(Number.isFinite(v) ? v : undefined);
-            }}
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          />
-          {allowInherit && pits !== undefined ? (
-            <InheritButton onClick={() => onPits(undefined)} />
-          ) : null}
-        </div>
-      </label>
-
-      {/* Pits drop through — inherit / yes / no. */}
-      <label className="block">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Pits drop to floor below
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <select
-            value={dials.pit_falls === undefined ? "" : dials.pit_falls ? "yes" : "no"}
-            onChange={(e) =>
-              onDial("pit_falls", e.target.value === "" ? undefined : e.target.value === "yes")
-            }
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          >
-            <option value="">
-              ({allowInherit ? "inherit" : "default"} —{" "}
-              {(parentDials?.pit_falls ?? true) ? "yes" : "no"})
-            </option>
-            <option value="yes">Yes — fall through (light damage)</option>
-            <option value="no">No — solid chasms</option>
-          </select>
-          {allowInherit && dials.pit_falls !== undefined ? (
-            <InheritButton onClick={() => onDial("pit_falls", undefined)} />
-          ) : null}
-        </div>
-      </label>
-
-      {/* Traps — 0–1 chance per room past the entrance of one hidden
-          trap near the room's centre. Default 0.35. */}
-      <label className="block" title="Chance each room past the entrance gets one hidden trap. 0 = no traps.">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Traps (0–1)
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <input
-            type="number"
-            step={0.05}
-            min={0}
-            max={1}
-            value={dials.traps ?? ""}
-            placeholder={String(parentDials?.traps ?? DUNGEON_DEFAULTS.traps)}
-            onChange={(e) => {
-              const v = e.target.value === "" ? NaN : Number(e.target.value);
-              onDial("traps", Number.isFinite(v) ? v : undefined);
-            }}
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          />
-          {allowInherit && dials.traps !== undefined ? (
-            <InheritButton onClick={() => onDial("traps", undefined)} />
-          ) : null}
-        </div>
-      </label>
-
-      <TrapMixField
-        own={dials.trap_types}
-        parent={parentDials?.trap_types}
-        allowInherit={allowInherit}
-        onChange={(v) => onDial("trap_types", v)}
-      />
-
-      {/* Dressing dials — clutter, floor variety, wall decorations.
-          Blank inherits the parent, else the style's default. */}
-      {(
-        [
-          ["objects", "Objects (0–1)", "Pillars / stalagmites / rubble in rooms. Never blocks a route."],
-          ["floor_variety", "Floor variety (0–1)", "Alternate floors: per room (dungeon) or patches (cavern)."],
-          ["wall_decor", "Wall decor (0–1)", "Banners, windows / glowing cracks, crystals, webs on wall faces."],
-          ["loops", "Loops (0–1)", "Extra corridors joining nearby rooms, so floors have circuits instead of dead ends."],
-          ["room_roles", "Room roles (0–1)", "Chance each room is furnished as a storeroom, library, mess hall, shrine, crypt, guard post, vault, parlour or camp."],
-        ] as const
-      ).map(([key, label, hint]) => {
-        const own = dials[key];
-        const styleKey = normalizeDungeonStyle(style ?? parentStyle);
-        const fallback = parentDials?.[key] ?? STYLE_DEFAULTS[styleKey][key];
-        return (
-          <label key={key} className="block" title={hint}>
-            <span className="text-xs uppercase tracking-wide text-parchment/65">
-              {label}
-            </span>
-            <div className="mt-0.5 flex items-center gap-1">
-              <input
-                type="number"
-                step={0.05}
-                min={0}
-                max={1}
-                value={own ?? ""}
-                placeholder={String(fallback)}
-                onChange={(e) => {
-                  const v = e.target.value === "" ? NaN : Number(e.target.value);
-                  onDial(key, Number.isFinite(v) ? v : undefined);
-                }}
-                className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-              />
-              {allowInherit && own !== undefined ? (
-                <InheritButton onClick={() => onDial(key, undefined)} />
-              ) : null}
-            </div>
-          </label>
-        );
-      })}
-
-      {/* Entrance / exit placement — edge of map vs dropped in interior
-          rooms. Applies to every style; absent inherits / defaults to
-          interior rooms. */}
-      <label className="block sm:col-span-2">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Entrance / exit placement
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <select
-            value={
-              edgeTransitions === undefined
-                ? ""
-                : edgeTransitions
-                  ? "edge"
-                  : "rooms"
-            }
-            onChange={(e) =>
-              onEdgeTransitions(
-                e.target.value === ""
-                  ? undefined
-                  : e.target.value === "edge",
-              )
-            }
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          >
-            {/* Blank = "use the default". On a Level it inherits the
-                parent; on the parent Dungeon it means interior rooms. Always representable so the dropdown never lies
-                about the effective value. */}
-            <option value="">
-              ({allowInherit ? "inherit" : "default"} — {edgeDefaultLabel})
-            </option>
-            <option value="edge">Edge of map</option>
-            <option value="rooms">In rooms (random)</option>
-          </select>
-          {allowInherit && edgeTransitions !== undefined ? (
-            <InheritButton onClick={() => onEdgeTransitions(undefined)} />
-          ) : null}
-        </div>
-      </label>
-
-      {/* Loot — chest item + frequency. Chests are opt-in: with no
-          chest item chosen, the generator places none. Spans 2 cols
-          so the item picker has room for full item names. */}
-      <label className="block sm:col-span-2">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Loot chest item
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <select
-            value={chestItem ?? ""}
-            onChange={(e) =>
-              onChestItem(e.target.value === "" ? undefined : e.target.value)
-            }
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          >
-            <option value="">
-              {allowInherit
-                ? parentChestItem
-                  ? `(inherit — ${chestLabel(chestItems, parentChestItem)})`
-                  : "(inherit — none)"
-                : "(none — no chests)"}
-            </option>
-            {groupItemsByCategory(chestItems).map((g) => (
-              <optgroup key={g.label} label={g.label}>
-                {g.items.map((it) => (
-                  <option key={it.id} value={it.id}>
-                    {it.name}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-            {/* An authored id that no longer resolves to a chest item
-                still shows so the author can see + fix it. */}
-            {chestItem && !chestItems.some((it) => it.id === chestItem) ? (
-              <option value={chestItem}>{chestItem} (missing)</option>
-            ) : null}
-          </select>
-          {allowInherit && chestItem !== undefined ? (
-            <InheritButton onClick={() => onChestItem(undefined)} />
-          ) : null}
-        </div>
-      </label>
-
-      {/* Chest frequency — only meaningful when a chest item is set. */}
-      <label className="block sm:col-span-2">
-        <span className="text-xs uppercase tracking-wide text-parchment/65">
-          Chest frequency (0–1, per room)
-        </span>
-        <div className="mt-0.5 flex items-center gap-1">
-          <input
-            type="number"
-            step={0.05}
-            min={0}
-            max={1}
-            value={chestFrequency ?? ""}
-            placeholder={
-              parentChestFrequency != null
-                ? String(parentChestFrequency)
-                : "0.5"
-            }
-            onChange={(e) => {
-              const v =
-                e.target.value === "" ? NaN : Number(e.target.value);
-              onChestFrequency(Number.isFinite(v) ? v : undefined);
-            }}
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-          />
-          {allowInherit && chestFrequency !== undefined ? (
-            <InheritButton onClick={() => onChestFrequency(undefined)} />
-          ) : null}
-        </div>
-      </label>
-    </div>
-  );
-}
-
-/** The dungeon-dressing dials, edited as one group. Undefined = inherit
- *  (Level) or use the style default (Dungeon). */
-interface Dials {
-  pit_falls?: boolean;
-  objects?: number;
-  floor_variety?: number;
-  wall_decor?: number;
-  loops?: number;
-  room_roles?: number;
-  /** 0–1 trap chance per room; undefined = inherit / default 0.35. */
-  traps?: number;
-  /** Weighted trap mix; undefined = inherit / default trap. */
-  trap_types?: TrapPick[];
-}
-function dialsOf(r: Dials): Dials {
-  return {
-    traps: r.traps,
-    trap_types: r.trap_types,
-    pit_falls: r.pit_falls,
-    objects: r.objects,
-    floor_variety: r.floor_variety,
-    wall_decor: r.wall_decor,
-    loops: r.loops,
-    room_roles: r.room_roles,
-  };
-}
-
-/** True when either side of an authored size is outside the range the
- *  generator accepts (it clamps; the editor just warns). */
-function sizeOutOfRange(size: DungeonSize): boolean {
-  const bad = (v: number) =>
-    !Number.isInteger(v) || v < DUNGEON_SIZE_MIN || v > DUNGEON_SIZE_MAX;
-  return bad(size.width) || bad(size.height);
 }
 
 /** Resolve a chest item id to its display name for the inherit hint. */
