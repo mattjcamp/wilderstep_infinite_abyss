@@ -43,6 +43,11 @@ export interface SimSpawn {
   name: string;
   /** Flavour text used by the encounter banner. Optional. */
   description?: string;
+  /** Lair marker — sprite path (e.g. "map/spawns/goblin_camp.png")
+   *  drawn over every cell carrying this spawn's id, so the player can
+   *  see where the lair is. Hidden once the lair is destroyed. Empty /
+   *  omitted = no marker (the cell shows only its painted tile). */
+  sprite?: string;
   /** Roster the per-step roller picks from. Monster ids (snake_case).
    *  Duplicate entries weight the random pick. Empty = lair never
    *  produces roamers (useful for "boss only" lairs). */

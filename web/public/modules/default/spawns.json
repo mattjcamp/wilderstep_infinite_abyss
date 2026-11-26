@@ -5,6 +5,7 @@
       "id": "goblin_spawn",
       "name": "Goblin Spawn",
       "description": "A group of goblins, surely up to no good",
+      "sprite": "map/spawns/goblin_camp.png",
       "spawn_monsters": [
         "goblin",
         "goblin",
@@ -29,6 +30,7 @@
       "id": "ghosts",
       "name": "Ghosts",
       "description": "A horde of ghosts appears",
+      "sprite": "map/spawns/haunted_graveyard.png",
       "spawn_monsters": [
         "ghost",
         "ghost",
@@ -51,6 +53,7 @@
       "id": "bats",
       "name": "Giant Bats",
       "description": "A swarm of Giant Bats appears in front of you",
+      "sprite": "map/spawns/bat_roost.png",
       "spawn_monsters": [
         "giant_bat",
         "giant_bat"
@@ -72,6 +75,7 @@
       "id": "orc_goblin",
       "name": "Orc and Goblins",
       "description": null,
+      "sprite": "map/spawns/orc_war_camp.png",
       "spawn_monsters": [
         "goblin",
         "goblin",

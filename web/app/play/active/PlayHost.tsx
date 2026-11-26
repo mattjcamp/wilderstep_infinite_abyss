@@ -3486,6 +3486,19 @@ export function PlayHost() {
         catalog.palette.find((t) => isWaterCell(t as { water?: unknown; tag?: string }))
           ?.sprite ?? "";
       if (waterSprite) spriteKeys.add(waterSprite);
+      // Lair markers — a cell whose `spawn` resolves to a Spawn with a
+      // `sprite` shows that sprite over its tile (see lairOverlays).
+      const lairSpriteById = new Map<string, string>();
+      for (const sp of catalog.spawns) {
+        const sprite = typeof sp.sprite === "string" ? sp.sprite.trim() : "";
+        if (sprite && sprite.includes("/")) lairSpriteById.set(sp.id, sprite);
+      }
+      for (const row of catalog.map.grid) {
+        for (const cell of row) {
+          const lair = cell.spawn ? lairSpriteById.get(cell.spawn) : undefined;
+          if (lair) spriteKeys.add(lair);
+        }
+      }
 
       // Viewport: a fixed 4:3 window matching the v1 web game's
       // 960×720 canvas. The Phaser canvas always renders at this
@@ -3559,6 +3572,20 @@ export function PlayHost() {
          *  shadow reads as shadowed. Mirrors the MapEditor's
          *  `npcOverlays` rendering for parity between author + play. */
         npcOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Lair markers keyed "col,row" — the Spawn's `sprite` drawn over
+         *  each cell whose `spawn` id resolves to a Spawn that has one,
+         *  so the player can see where a lair is. Depth 65: above the
+         *  tile, below items (70) / NPCs (75) / quest givers (80).
+         *  Removed when the lair is destroyed (live `spawn_destroyed`, or
+         *  already destroyed in the save on mount). Unlike NPCs these are
+         *  landmarks, so they stay drawn on remembered (fogged) cells. */
+        lairOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        removeLairOverlay(key: string) {
+          const img = this.lairOverlays.get(key);
+          if (!img) return;
+          img.destroy();
+          this.lairOverlays.delete(key);
+        }
         /** Loose (parked) boats, keyed "col,row". Each is an Image
          *  drawn ON TOP of the cell, like an NPC — the cell's own
          *  sprite (open water, a river piece) is never touched.
@@ -3803,6 +3830,23 @@ export function PlayHost() {
               }
               for (const [key, img] of this.npcOverlays) {
                 applyOverlayCellState(img, key);
+              }
+              // Lair markers follow the terrain rule, not the
+              // live-entity rule: hidden only under unexplored cover,
+              // otherwise tinted like the cell (dim when remembered).
+              for (const [key, img] of this.lairOverlays) {
+                const [cs, rs] = key.split(",");
+                const c = Number(cs);
+                const r = Number(rs);
+                const info = result.cells.get(key);
+                if (info?.isUnexplored) {
+                  img.setVisible(false);
+                  continue;
+                }
+                img.setVisible(true);
+                const t = tintForCell(result, c, r);
+                if (t.mode === "clear") img.clearTint();
+                else img.setTint(t.value);
               }
               for (const [key, img] of this.boatOverlays) {
                 applyOverlayCellState(img, key);
@@ -4179,6 +4223,28 @@ export function PlayHost() {
                 startNpcDance(this.tweens, img);
               }
               this.npcOverlays.set(`${c},${r}`, img);
+            }
+          }
+
+          // Lair markers — one Image per cell whose `spawn` resolves to
+          // a Spawn with a sprite. Already-destroyed lairs are dropped
+          // right after mountSim (the kernel owns that list).
+          for (let r = 0; r < catalog.map.height; r++) {
+            for (let c = 0; c < catalog.map.width; c++) {
+              const spawnId = catalog.map.grid[r][c].spawn;
+              if (typeof spawnId !== "string" || !spawnId) continue;
+              const lair = lairSpriteById.get(spawnId);
+              if (!lair || !this.textures.exists(lair)) continue;
+              const img = this.add
+                .image(
+                  c * TILE_SIZE + TILE_SIZE / 2,
+                  r * TILE_SIZE + TILE_SIZE / 2,
+                  lair,
+                )
+                .setOrigin(0.5)
+                .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                .setDepth(65);
+              this.lairOverlays.set(`${c},${r}`, img);
             }
           }
 
@@ -5161,6 +5227,10 @@ export function PlayHost() {
             })(),
           });
           simRef.current = sim;
+          // Lairs destroyed earlier in this save lose their marker.
+          for (const key of sim.snapshot().destroyedLairs) {
+            this.removeLairOverlay(key);
+          }
           // Landing after a pit fall: the party drops in from above
           // with a thud, a burst of dust and a shake, then the fall
           // card says what happened.
@@ -5234,6 +5304,9 @@ export function PlayHost() {
           }
 
           sim.subscribe((ev) => {
+            if (ev.kind === "spawn_destroyed") {
+              this.removeLairOverlay(`${ev.pos.col},${ev.pos.row}`);
+            }
             if (ev.kind === "moved") {
               // A sticky "New Quest" placard waits for the party to move.
               if (isStickyCelebration(celebrationHeadKindRef.current)) {

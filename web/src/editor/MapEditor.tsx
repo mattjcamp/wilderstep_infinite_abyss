@@ -89,6 +89,7 @@ import {
 import { SpritePicker } from "./SpritePicker";
 import { LootEditor, type LootStash } from "./LootEditor";
 import { EncounterPicker } from "./EncounterPicker";
+import { SpawnPicker } from "./SpawnPicker";
 import { anchorCell, nextCellSelection } from "./cellSelection";
 import { effectiveTagOrder, tagLabel } from "./mapTags";
 import { MapPickerField, type PickableMap } from "./MapPickerDialog";
@@ -964,6 +965,12 @@ export function MapEditor({
     refreshAnimations: () => void;
     /** Sync per-cell encounter-sprite overlays from each cell's encounter field. */
     refreshEncounterOverlays: () => void;
+    /** Sync per-cell lair overlays: a cell whose `spawn` resolves to a
+     *  Spawn with a `sprite` shows that sprite on top of its tile. */
+    refreshSpawnOverlays: () => void;
+    /** Sim mode: lair cells the party has destroyed — their overlay is
+     *  hidden until the sim is torn down (empty set restores them). */
+    setDestroyedLairs: (cells: ReadonlySet<string>) => void;
     /** Sync per-cell item-sprite overlays from each cell's item field. */
     refreshItemOverlays: () => void;
     /** Play the "collected!" pickup effect at (col, row): the item's
@@ -1590,6 +1597,7 @@ export function MapEditor({
         palette,
         mapRecord,
         encounters,
+        spawns,
         items,
         npcs,
         availableQuests,
@@ -1600,6 +1608,13 @@ export function MapEditor({
       } = state;
       const paletteById = new Map(palette.map((t) => [t.id, t]));
       const encountersById = new Map(encounters.map((e) => [e.id, e]));
+      // Spawn id → lair sprite path (map/spawns/…png). Spawns without
+      // a sprite draw nothing extra over their cell.
+      const spawnSpriteById = new Map<string, string>();
+      for (const sp of spawns) {
+        const sprite = typeof sp.sprite === "string" ? sp.sprite.trim() : "";
+        if (sprite && sprite.includes("/")) spawnSpriteById.set(sp.id, sprite);
+      }
       const itemsById = new Map(items.map((i) => [i.id, i]));
       const npcsById = new Map(npcs.map((n) => [n.id, n]));
       const questsById = new Map(availableQuests.map((q) => [q.id, q]));
@@ -1650,6 +1665,7 @@ export function MapEditor({
       for (const i of items) {
         if (i.icon) spriteKeys.add(`item/${i.icon}.png`);
       }
+      for (const sprite of spawnSpriteById.values()) spriteKeys.add(sprite);
       // Quest-giver NPC sprites — preload so the on-map overlay is
       // ready as soon as a cell with `tile.quest` becomes visible.
       for (const q of availableQuests) {
@@ -1715,6 +1731,13 @@ export function MapEditor({
         encounterOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
         /** Current encounter id per cell so refresh can skip no-ops. */
         encounterOverlayIds: Map<string, string> = new Map();
+        /** Lair overlay sprites keyed by "col,row" — the Spawn's
+         *  `sprite` drawn over cells whose `spawn` is set. */
+        spawnOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Current "spawnId|sprite" per cell so refresh can skip no-ops. */
+        spawnOverlayIds: Map<string, string> = new Map();
+        /** Sim mode: destroyed lair cells (overlay hidden). */
+        destroyedLairCells: Set<string> = new Set();
         /** Item overlay sprites keyed by "col,row". */
         itemOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
         /** Current item id per cell so refresh can skip no-ops. */
@@ -2126,6 +2149,12 @@ export function MapEditor({
               // Assigned for real below — placeholder so the API object
               // matches the type until create() finishes wiring it.
             },
+            refreshSpawnOverlays: () => {
+              // Assigned for real below.
+            },
+            setDestroyedLairs: () => {
+              // Assigned for real below.
+            },
             refreshItemOverlays: () => {
               // Assigned for real below — placeholder so the API object
               // matches the type until create() finishes wiring it.
@@ -2256,6 +2285,10 @@ export function MapEditor({
               // un-tinted — they're UI affordances, not part of the
               // diegetic world.
               for (const [key, img] of this.encounterOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              for (const [key, img] of this.spawnOverlays) {
                 const [cs, rs] = key.split(",");
                 applyTint(img, Number(cs), Number(rs));
               }
@@ -2849,6 +2882,54 @@ export function MapEditor({
                 }
               }
             };
+            sceneApiRef.current.refreshSpawnOverlays = () => {
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const cell = gridRef.current[r]?.[c];
+                  const key = `${c},${r}`;
+                  const spawnId = cell?.spawn ?? "";
+                  const sprite =
+                    spawnId && !sceneSelf.destroyedLairCells.has(key)
+                      ? (spawnSpriteById.get(spawnId) ?? "")
+                      : "";
+                  const wantedId = sprite ? `${spawnId}|${sprite}` : "";
+                  const currentId = sceneSelf.spawnOverlayIds.get(key) ?? "";
+                  if (wantedId === currentId) continue;
+                  const existing = sceneSelf.spawnOverlays.get(key);
+                  if (existing) {
+                    existing.destroy();
+                    sceneSelf.spawnOverlays.delete(key);
+                  }
+                  sceneSelf.spawnOverlayIds.delete(key);
+                  if (!wantedId) continue;
+                  // Track the id even when the texture is missing so we
+                  // don't retry every pass.
+                  sceneSelf.spawnOverlayIds.set(key, wantedId);
+                  if (!sceneSelf.textures.exists(sprite)) continue;
+                  const img = sceneSelf.add
+                    .image(
+                      c * TILE_SIZE + TILE_SIZE / 2,
+                      r * TILE_SIZE + TILE_SIZE / 2,
+                      sprite,
+                    )
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                    // A lair is part of the landscape: above the tile and
+                    // quest glow (60), below items (70), NPCs (75) and
+                    // encounter overlays (80).
+                    .setDepth(65);
+                  const baseImg = sceneSelf.cells.get(key);
+                  if (baseImg && baseImg.isTinted) {
+                    img.setTint(baseImg.tintTopLeft);
+                  }
+                  sceneSelf.spawnOverlays.set(key, img);
+                }
+              }
+            };
+            sceneApiRef.current.setDestroyedLairs = (cells) => {
+              sceneSelf.destroyedLairCells = new Set(cells);
+              sceneApiRef.current?.refreshSpawnOverlays();
+            };
             sceneApiRef.current.refreshItemOverlays = () => {
               for (let r = 0; r < mapRecord.height; r++) {
                 for (let c = 0; c < mapRecord.width; c++) {
@@ -3144,6 +3225,8 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
           // Initial encounter-overlay pass — seeds sprites for cells
           // whose encounter is set at load time.
           sceneApiRef.current.refreshEncounterOverlays();
+          // Initial lair-overlay pass — Spawn sprites on lair cells.
+          sceneApiRef.current.refreshSpawnOverlays();
           // Initial item-overlay pass — seeds sprites for cells whose
           // item is set at load time.
           sceneApiRef.current.refreshItemOverlays();
@@ -3930,9 +4013,11 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
         setSpawnEncounter(ev.options);
       }
       if (ev.kind === "spawn_destroyed") {
-        // No special UI today — the cell visual is already swapped by
-        // setCellSprite and the inspector picks up the change on its
-        // next render. Just log the event for the user.
+        // The base cell is already swapped by setCellSprite; hide the
+        // lair's Spawn sprite too. Restored when the sim is torn down.
+        sceneApiRef.current?.setDestroyedLairs(
+          new Set(sim.snapshot().destroyedLairs),
+        );
       }
       if (ev.kind === "quest_encountered") {
         // Quest tile bumped — the kernel re-fires every time, so we
@@ -4009,6 +4094,7 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
     return () => {
       unsubscribe();
       sim.dispose();
+      sceneApiRef.current?.setDestroyedLairs(new Set());
       if (simRef.current === sim) {
         simRef.current = null;
         setSimInstance(null);
@@ -4067,6 +4153,11 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
   // is similarly diff-based — unchanged cells are skipped.
   useEffect(() => {
     sceneApiRef.current?.refreshEncounterOverlays();
+  }, [state]);
+
+  // Sync lair overlays (Spawn sprites on cells with a `spawn` id).
+  useEffect(() => {
+    sceneApiRef.current?.refreshSpawnOverlays();
   }, [state]);
 
   // Sync item overlay sprites with the grid. Same diff-based refresh
@@ -6183,25 +6274,35 @@ function Inspector({
             </p>
           </InspectorRow>
 
-          <SelectEditor
+          {/* Graphical lair picker — shows each Spawn's marker sprite
+              (what gets drawn on this cell), roamers and boss. */}
+          <InspectorRow
             label="Spawn"
-            help="Spawn template from spawns.json (monster-lair behavior). Empty for none."
-            value={instance.spawn ?? ""}
-            paletteValue={base?.spawn ?? instance.spawn ?? ""}
-            options={[
-              { value: "", label: "(none)" },
-              ...spawns.map((s) => ({
-                value: s.id,
-                label: s.name ? `${s.name} — ${s.id}` : s.id,
-              })),
-            ]}
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "spawn")
             }
             canReset={!!base}
-            onChange={(v) => onUpdate({ spawn: v })}
             onReset={() => onUpdate({ spawn: undefined })}
-          />
+          >
+            <SpawnPicker
+              value={instance.spawn ?? ""}
+              spawns={spawns}
+              onChange={(v) => onUpdate({ spawn: v })}
+            />
+            <p className="mt-0.5 text-xs text-parchment/60">
+              palette:{" "}
+              {(() => {
+                const pid = base?.spawn ?? "";
+                if (!pid) return "(none)";
+                const found = spawns.find((sp) => sp.id === pid);
+                return found?.name ? `${found.name} — ${pid}` : pid;
+              })()}
+            </p>
+            <p className="mt-1 text-xs text-parchment/65">
+              Monster lair from spawns.json. Empty for none. The spawn&apos;s
+              lair sprite renders on the cell.
+            </p>
+          </InspectorRow>
 
           <SelectEditor
             label="Item"

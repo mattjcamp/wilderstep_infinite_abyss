@@ -118,6 +118,8 @@ const SPAWN_FIELDS: Record<string, unknown> = {
   id: "",
   name: "",
   description: "",
+  // Lair marker drawn over the spawn's map cell (sprites/map/spawns/).
+  sprite: "",
   spawn_monsters: [],
   spawn_chance: 5,
   spawn_radius: 5,

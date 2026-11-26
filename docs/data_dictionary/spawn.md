@@ -32,6 +32,7 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array (uniform 
 | `id` | string | yes | Stable identifier in snake_case (e.g. `"monster_spawn"`, `"dragon_lair"`). Referenced by [Map Tile](map_tile.md) `spawn`. | TBD |
 | `name` | string | yes | Display name for the "Approach Lair?" prompt | TBD |
 | `description` | string | no | Flavor text shown when approaching | TBD |
+| `sprite` | string | no | Lair marker: a sprite path (e.g. `"map/spawns/goblin_camp.png"`) drawn over every map cell bound to this spawn, so the player can see where the lair is — in the Map Editor, its sim mode and in play. Hidden once the lair is destroyed; stays visible on remembered (fogged) cells like terrain. The editor renders a Sprite picker opening on the `map` folder; the stock lair art lives in `sprites/map/spawns/`. Empty/omitted = no marker. | Yes |
 | `spawn_monsters` | string[] | yes | Roster the per-step roller picks from (uniform random). Each entry is a [Monster](monster.md) `id`. Duplicates control sampling weight (`["goblin","goblin","orc"]` ≈ 2:1 goblin-to-orc). | TBD |
 | `spawn_chance` | int (1–100) | yes | Per-step percent chance to spawn a roamer | TBD |
 | `spawn_radius` | int | yes | Chebyshev tile radius for the saturation check | TBD |

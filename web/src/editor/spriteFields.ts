@@ -62,6 +62,11 @@ const PER_MODEL: Record<string, Record<string, SpriteFieldConfig>> = {
   monsters: {
     sprite: { category: "monster", format: "path" },
   },
+  // Spawn (monster lair): drawn over the lair cell on the map so the
+  // player can see where it is. Lair art lives in sprites/map/spawns/.
+  spawns: {
+    sprite: { category: "map", format: "path" },
+  },
   // Spell icons live in their own sprites/spells/ folder (the shared
   // `icon` field otherwise means an item icon).
   spells: {

@@ -4,26 +4,194 @@
       "id": "werewolf",
       "name": "Werewolves",
       "description": "A pack of snarling wolves, lead by a half man, half wolf creature.",
+      "sprite": "map/spawns/wolf_den.png",
       "spawn_monsters": [
         "werewolf",
         "werewolf",
         "dire_wolf",
-        "wolf",
-        "wolf",
         "wolf"
       ],
       "spawn_chance": 5,
       "spawn_radius": 5,
       "max_spawned": 2,
-      "boss_monsters": [],
-      "xp_reward": 0,
-      "gold_reward": 0,
-      "loot": [],
-      "custom_map": null,
+      "boss_monsters": [
+        "werewolf",
+        "werewolf",
+        "werewolf",
+        "dire_wolf",
+        "dire_wolf"
+      ],
+      "xp_reward": 300,
+      "gold_reward": 300,
+      "loot": [
+        "healing_potion",
+        "mana_potion"
+      ],
+      "custom_map": "outdoor_arena",
       "active_time_of_day": [],
       "active_moon_phases": [
         "full_moon"
       ]
+    },
+    {
+      "id": "goblin_spawn",
+      "name": "Goblin Spawn",
+      "description": "A group of goblins, surely up to no good",
+      "sprite": "map/spawns/goblin_camp.png",
+      "spawn_monsters": [
+        "goblin",
+        "goblin",
+        "goblin"
+      ],
+      "spawn_chance": 5,
+      "spawn_radius": 5,
+      "max_spawned": 1,
+      "boss_monsters": [
+        "dire_wolf",
+        "dire_wolf",
+        "goblin",
+        "goblin",
+        "goblin"
+      ],
+      "xp_reward": 200,
+      "gold_reward": 50,
+      "loot": [
+        "camping_supplies"
+      ],
+      "custom_map": "outdoor_arena",
+      "active_time_of_day": [
+        "day",
+        "dusk",
+        "dawn"
+      ]
+    },
+    {
+      "id": "ghosts",
+      "name": "Ghosts",
+      "description": "A horde of ghosts appears",
+      "sprite": "map/spawns/haunted_graveyard.png",
+      "spawn_monsters": [
+        "ghost",
+        "ghost",
+        "ghost"
+      ],
+      "spawn_chance": 5,
+      "spawn_radius": 5,
+      "max_spawned": 1,
+      "boss_monsters": [
+        "ghost",
+        "ghost",
+        "ghost",
+        "ghoul"
+      ],
+      "xp_reward": 200,
+      "gold_reward": 200,
+      "loot": [],
+      "custom_map": "arena_graveyard",
+      "active_time_of_day": [
+        "dusk",
+        "night"
+      ]
+    },
+    {
+      "id": "bats",
+      "name": "Giant Bats",
+      "description": "A swarm of Giant Bats appears in front of you",
+      "sprite": "map/spawns/bat_roost.png",
+      "spawn_monsters": [
+        "giant_bat",
+        "giant_bat"
+      ],
+      "spawn_chance": 5,
+      "spawn_radius": 5,
+      "max_spawned": 1,
+      "boss_monsters": [
+        "giant_bat",
+        "giant_bat",
+        "giant_spider"
+      ],
+      "xp_reward": 100,
+      "gold_reward": 100,
+      "loot": [
+        "antidote",
+        "fire_oil"
+      ],
+      "custom_map": "outdoor_arena",
+      "active_time_of_day": [
+        "dusk",
+        "night",
+        "dawn"
+      ]
+    },
+    {
+      "id": "orc_goblin",
+      "name": "Orc and Goblins",
+      "description": null,
+      "sprite": "map/spawns/orc_war_camp.png",
+      "spawn_monsters": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "orc"
+      ],
+      "spawn_chance": 5,
+      "spawn_radius": 5,
+      "max_spawned": 2,
+      "boss_monsters": [
+        "goblin",
+        "goblin",
+        "orc",
+        "orc",
+        "orc_cleric"
+      ],
+      "xp_reward": 200,
+      "gold_reward": 200,
+      "loot": [
+        "healing_potion",
+        "broad_axe"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "active_time_of_day": [
+        "day",
+        "dawn"
+      ]
+    },
+    {
+      "id": "elemental_spawn",
+      "name": "Elemental Spawn",
+      "description": "The four elements appear, disappear and swirl in a chaotic display.",
+      "sprite": "map/spawns/elemental_rift.png",
+      "spawn_monsters": [
+        "air_elemental",
+        "fire_elemental",
+        "earth_elemental",
+        "water_elemental"
+      ],
+      "spawn_chance": 5,
+      "spawn_radius": 5,
+      "max_spawned": 2,
+      "boss_monsters": [
+        "air_elemental",
+        "earth_elemental",
+        "fire_elemental",
+        "water_elemental",
+        "hydra"
+      ],
+      "xp_reward": 500,
+      "gold_reward": 500,
+      "loot": [
+        "mana_potion",
+        "healing_potion",
+        "mana_potion",
+        "healing_potion",
+        "plate",
+        "fire_arrows",
+        "fire_oil",
+        "scroll_of_fire"
+      ],
+      "custom_map": "elemental_battle_map",
+      "active_time_of_day": [],
+      "active_moon_phases": []
     }
   ]
 }
