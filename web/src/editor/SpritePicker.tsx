@@ -12,6 +12,11 @@
  *   [ thumb ] [ text input ] [ Pick… / Done ] [ ✕ clear ]
  *   (expands when open) ┌─ filter bar + collapsible sprite folder tree ─┐
  *
+ * With `config.dialog` the browser opens as a large centred dialog
+ * instead (same chrome as the Link map picker), optionally limited to
+ * `config.categories` and without the people tag filters — used for a
+ * tile's background sprite.
+ *
  * Click a sprite tile → field value becomes the canonical form
  * (category/file.png for "path" fields, just the stem for "icon").
  * Existing legacy values stay editable; the picker just makes new
@@ -19,6 +24,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { PickerDialogFrame, PickerToolbarButton } from "./PickerDialog";
 import {
   formatPickedValue,
   resolveSpritePath,
@@ -85,6 +91,39 @@ export function SpritePicker({
     setOpen(false);
   };
 
+  // Restrict the index to the configured folders (if any).
+  const visibleIndex: SpriteIndex | null =
+    indexState.kind === "ok"
+      ? config.categories
+        ? {
+            categories: Object.fromEntries(
+              Object.entries(indexState.index.categories).filter(([c]) =>
+                config.categories!.includes(c),
+              ),
+            ),
+          }
+        : indexState.index
+      : null;
+
+  const body =
+    indexState.kind === "loading" ? (
+      <p className="text-[13px] text-parchment/75">Loading sprites…</p>
+    ) : indexState.kind === "error" ? (
+      <p className="text-[13px] text-ember/80">
+        Failed to load sprite index: {indexState.message}
+      </p>
+    ) : visibleIndex ? (
+      <SpriteGrid
+        index={visibleIndex}
+        filter={filter.trim().toLowerCase()}
+        preferredCategory={config.category}
+        currentValue={value}
+        onPick={handlePick}
+        tagFilters={config.tagFilters ?? true}
+        fill={!!config.dialog}
+      />
+    ) : null;
+
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -120,7 +159,7 @@ export function SpritePicker({
           onClick={() => setOpen((o) => !o)}
           className="rounded border border-parchment/30 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
         >
-          {open ? "Done" : "Pick…"}
+          {open && !config.dialog ? "Done" : "Pick…"}
         </button>
         {value ? (
           <button
@@ -134,7 +173,23 @@ export function SpritePicker({
         ) : null}
       </div>
 
-      {open ? (
+      {open && config.dialog ? (
+        <SpritePickerDialog
+          title={config.dialogTitle ?? "Choose a sprite"}
+          filter={filter}
+          onFilter={setFilter}
+          onClose={() => setOpen(false)}
+          allowNone={!!value}
+          onNone={() => {
+            onChange("");
+            setOpen(false);
+          }}
+        >
+          {body}
+        </SpritePickerDialog>
+      ) : null}
+
+      {open && !config.dialog ? (
         <div className="mt-2 rounded border border-parchment/15 bg-ink/40 p-3">
           <div className="mb-2 flex items-center gap-2">
             <input
@@ -149,24 +204,52 @@ export function SpritePicker({
             </span>
           </div>
 
-          {indexState.kind === "loading" ? (
-            <p className="text-[13px] text-parchment/75">Loading sprites…</p>
-          ) : indexState.kind === "error" ? (
-            <p className="text-[13px] text-ember/80">
-              Failed to load sprite index: {indexState.message}
-            </p>
-          ) : indexState.kind === "ok" ? (
-            <SpriteGrid
-              index={indexState.index}
-              filter={filter.trim().toLowerCase()}
-              preferredCategory={config.category}
-              currentValue={value}
-              onPick={handlePick}
-            />
-          ) : null}
+          {body}
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** Large centred dialog for the sprite browser — the shared picker
+ *  frame (same as the Link map picker). */
+function SpritePickerDialog({
+  title,
+  filter,
+  onFilter,
+  onClose,
+  allowNone,
+  onNone,
+  children,
+}: {
+  title: string;
+  filter: string;
+  onFilter: (v: string) => void;
+  onClose: () => void;
+  allowNone: boolean;
+  onNone: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <PickerDialogFrame
+      title={title}
+      search={filter}
+      onSearch={onFilter}
+      searchPlaceholder="Search sprites by name…"
+      onClose={onClose}
+      toolbar={
+        allowNone ? (
+          <PickerToolbarButton
+            onClick={onNone}
+            title="Clear — no background (dark canvas)"
+          >
+            None
+          </PickerToolbarButton>
+        ) : null
+      }
+    >
+      {children}
+    </PickerDialogFrame>
   );
 }
 
@@ -192,12 +275,18 @@ function SpriteGrid({
   preferredCategory,
   currentValue,
   onPick,
+  tagFilters = true,
+  fill = false,
 }: {
   index: SpriteIndex;
   filter: string;
   preferredCategory: string;
   currentValue: string;
   onPick: (category: string, filename: string) => void;
+  /** Show the Race / Gender / Role / Detail filter bar. */
+  tagFilters?: boolean;
+  /** Grow to fill a flex parent (dialog) instead of a fixed max height. */
+  fill?: boolean;
 }) {
   const collapsed = useCollapsedFolders("wilderstep.spritePicker.collapsed");
   /** Selected tag values per category ("Race" → {"Elf","Dwarf"}).
@@ -217,7 +306,7 @@ function SpriteGrid({
   }
 
   // Tag values available per category across every sprite.
-  const available: [string, string[]][] = (() => {
+  const available: [string, string[]][] = !tagFilters ? [] : (() => {
     const by = new Map<string, Set<string>>();
     for (const [cat, files] of Object.entries(ordered)) {
       for (const f of files) {
@@ -261,7 +350,7 @@ function SpriteGrid({
   const hoveredName = hovered ? spriteDisplayName(hovered) : null;
 
   return (
-    <div>
+    <div className={fill ? "flex min-h-0 flex-1 flex-col" : undefined}>
       {available.length > 0 ? (
         <div className="mb-2 space-y-1 rounded border border-parchment/10 bg-ink/30 p-2">
           {available.map(([cat, vals]) => (
@@ -319,7 +408,10 @@ function SpriteGrid({
           onCollapse={() => collapsed.setMany(allFolderPaths(fullTree), true)}
         />
       </div>
-      <div className="max-h-[28rem] overflow-auto pr-1" onMouseLeave={() => setHovered(null)}>
+      <div
+        className={`${fill ? "min-h-0 flex-1" : "max-h-[28rem]"} overflow-auto pr-1`}
+        onMouseLeave={() => setHovered(null)}
+      >
         <SpriteFolderTree
           root={tree}
           totals={fullTree}

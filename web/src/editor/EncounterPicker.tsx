@@ -24,6 +24,7 @@
  */
 
 import { useState } from "react";
+import { matchesQuery, PickerDialogFrame } from "./PickerDialog";
 import { spriteUrl } from "@/data_model/spriteUrl";
 
 /** The slice of an encounter the picker reads. Hosts pass their merged
@@ -123,10 +124,16 @@ export function EncounterPicker({
   value,
   encounters,
   onChange,
+  dialog = false,
+  dialogTitle = "Encounter",
 }: {
   value: string;
   encounters: ReadonlyArray<EncounterPickerEntry>;
   onChange: (value: string) => void;
+  /** Open the list as a large centred dialog (Map editor) instead of
+   *  expanding inline under the field. */
+  dialog?: boolean;
+  dialogTitle?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -159,41 +166,14 @@ export function EncounterPicker({
     return d ? `${name} (${d.label})` : name;
   })();
 
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex flex-1 items-center gap-2 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-sm text-parchment hover:bg-ink/60"
-          aria-expanded={open}
-        >
-          <span className="text-parchment/60">{open ? "▾" : "▸"}</span>
-          {current?.monster_party_tile ? (
-            <SpriteThumb
-              path={current.monster_party_tile}
-              alt={current.name ?? current.id}
-            />
-          ) : null}
-          <span className="truncate">{summary}</span>
-        </button>
-        {value ? (
-          <button
-            type="button"
-            onClick={() => onChange("")}
-            className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
-            title="Clear the encounter selection."
-          >
-            ✕
-          </button>
-        ) : null}
-      </div>
-
-      {open ? (
-        <div className="mt-1 max-h-64 overflow-auto rounded border border-parchment/15 bg-ink/60 p-2">
-          {encounters.length === 0 ? (
+  const [query, setQuery] = useState("");
+  const q = dialog ? query.trim() : "";
+  const shown = encounters.filter((e) => matchesQuery(`${e.name ?? ""} ${e.id} ${e.theme ?? ""} ${(e.monsters ?? []).join(" ")}`, q));
+  const listBody = (
+    <>
+          {shown.length === 0 ? (
             <p className="text-[13px] text-parchment/70">
-              No encounters defined in this module.
+              {q ? `No encounters match “${q}”.` : "No encounters defined in this module."}
             </p>
           ) : (
             <ul className="space-y-1">
@@ -214,8 +194,8 @@ export function EncounterPicker({
                   <span className="font-mono text-parchment/70">(none)</span>
                 </button>
               </li>
-              {groupByThemeThenDifficulty(encounters).map((group) => {
-                const expanded = openThemes.has(group.theme);
+              {groupByThemeThenDifficulty(shown).map((group) => {
+                const expanded = q.length > 0 || openThemes.has(group.theme);
                 return (
                   <li key={`theme:${group.theme}`}>
                     {/* Collapsible theme header — collapsed by default so
@@ -289,7 +269,60 @@ export function EncounterPicker({
               })}
             </ul>
           )}
+    </>
+  );
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex flex-1 items-center gap-2 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-sm text-parchment hover:bg-ink/60"
+          aria-expanded={open}
+        >
+          {dialog ? null : <span className="text-parchment/60">{open ? "▾" : "▸"}</span>}
+          {current?.monster_party_tile ? (
+            <SpriteThumb
+              path={current.monster_party_tile}
+              alt={current.name ?? current.id}
+            />
+          ) : null}
+          <span className="truncate">{summary}</span>
+          {dialog ? (
+            <span aria-hidden className="ml-auto shrink-0 text-parchment/50">
+              ⋯
+            </span>
+          ) : null}
+        </button>
+        {value ? (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
+            title="Clear the encounter selection."
+          >
+            ✕
+          </button>
+        ) : null}
+      </div>
+
+      {open && !dialog ? (
+        <div className="mt-1 max-h-64 overflow-auto rounded border border-parchment/15 bg-ink/60 p-2">
+          {listBody}
         </div>
+      ) : null}
+      {open && dialog ? (
+        <PickerDialogFrame
+          title={dialogTitle}
+          count={q ? `${shown.length} of ${encounters.length}` : `${encounters.length} encounters`}
+          search={query}
+          onSearch={setQuery}
+          searchPlaceholder="Search name, id or monsters…"
+          onClose={() => setOpen(false)}
+        >
+          <div className="text-[15px]">{listBody}</div>
+        </PickerDialogFrame>
       ) : null}
     </div>
   );

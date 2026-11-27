@@ -68,6 +68,10 @@ export interface Combatant {
    *  while the combatant is alive. Absent for ordinary weapons —
    *  the scene falls through to its no-aura render path. */
   wieldAuraColor?: number;
+  /** True when the equipped weapon is `aflame` (Sun Sword) — the
+   *  CombatScene keeps a small fire burning at the body's weapon
+   *  hand while the combatant is alive. */
+  wieldFlame?: boolean;
   /** Full ability scores carried over from the PartyMember (or
    *  monster spec). Optional because legacy fixtures and some of the
    *  combat tests omit them — combat helpers default each to 10

@@ -28,11 +28,14 @@
 import { useEffect, useState } from "react";
 import type { ChestContents } from "@/sim/types";
 import { spriteUrl } from "@/data_model/spriteUrl";
+import { ItemSprite } from "./ItemSprite";
 
 interface ChestItemForDisplay {
   id: string;
   name?: string;
   icon?: string;
+  /** Burning item (Sun Sword) — icon flickers with fire. */
+  aflame?: boolean;
   qty?: number;
 }
 
@@ -197,18 +200,10 @@ export function ChestDialogOverlay({
                     >
                       <span className="flex items-center gap-2">
                         {iconSrc ? (
-                          <img
-                            src={iconSrc}
-                            alt=""
-                            width={16}
-                            height={16}
-                            style={{ imageRendering: "pixelated" }}
-                            className="h-4 w-4 object-contain"
-                            onError={(e) => {
-                              (
-                                e.currentTarget as HTMLImageElement
-                              ).style.visibility = "hidden";
-                            }}
+                          <ItemSprite
+                            icon={display?.icon}
+                            size={16}
+                            aflame={display?.aflame}
                           />
                         ) : null}
                         <span className="text-parchment/90">{label}</span>

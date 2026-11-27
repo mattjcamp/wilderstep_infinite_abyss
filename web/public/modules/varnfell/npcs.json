@@ -99,6 +99,1206 @@
       ],
       "behavior": "wander",
       "exploration_xp": 25
+    },
+    {
+      "id": "ragnar",
+      "name": "Ragnar",
+      "sprite": "person/person_male_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "varnfell_bjorn",
+      "name": "Bjorn",
+      "sprite": "person/person_male_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "ivar",
+      "name": "Ivar",
+      "sprite": "person/person_male_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "leif",
+      "name": "Leif",
+      "sprite": "person/person_male_ranger.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "erik",
+      "name": "Erik",
+      "sprite": "person/person_male_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "harald",
+      "name": "Harald",
+      "sprite": "person/person_male_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "sigurd",
+      "name": "Sigurd",
+      "sprite": "person/person_male_paladin.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "rurik",
+      "name": "Rurik",
+      "sprite": "person/person_male_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "halfdan",
+      "name": "Halfdan",
+      "sprite": "person/person_male_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "hakon",
+      "name": "Hakon",
+      "sprite": "person/person_male_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "einar",
+      "name": "Einar",
+      "sprite": "person/person_male_ranger.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "gunnar",
+      "name": "Gunnar",
+      "sprite": "person/person_male_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "thorsten",
+      "name": "Thorsten",
+      "sprite": "person/person_male_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "sten",
+      "name": "Sten",
+      "sprite": "person/person_male_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "ulf",
+      "name": "Ulf",
+      "sprite": "person/person_male_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "knut",
+      "name": "Knut",
+      "sprite": "person/person_male_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "arvid",
+      "name": "Arvid",
+      "sprite": "person/person_male_ranger.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "svend",
+      "name": "Svend",
+      "sprite": "person/person_male_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "torvald",
+      "name": "Torvald",
+      "sprite": "person/person_male_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "asger",
+      "name": "Asger",
+      "sprite": "person/person_male_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "trygve",
+      "name": "Trygve",
+      "sprite": "person/person_male_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "vidar",
+      "name": "Vidar",
+      "sprite": "person/person_male_druid.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "roald",
+      "name": "Roald",
+      "sprite": "person/person_male_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "hrolf",
+      "name": "Hrolf",
+      "sprite": "person/person_male_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "skardi",
+      "name": "Skardi",
+      "sprite": "person/person_male_musician_harp.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "dance",
+      "exploration_xp": 25
+    },
+    {
+      "id": "egil",
+      "name": "Egil",
+      "sprite": "person/person_male_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "orm",
+      "name": "Orm",
+      "sprite": "person/person_male_druid.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "grim",
+      "name": "Grim",
+      "sprite": "person/person_male_thief.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "hrafn",
+      "name": "Hrafn",
+      "sprite": "person/person_male_wizard.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "ketil",
+      "name": "Ketil",
+      "sprite": "person/person_male_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "alaric",
+      "name": "Alaric",
+      "sprite": "person/person_male_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "aldric",
+      "name": "Aldric",
+      "sprite": "person/person_male_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "arthur",
+      "name": "Arthur",
+      "sprite": "person/person_male_paladin.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "baldwin",
+      "name": "Baldwin",
+      "sprite": "person/person_male_cleric.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "cedric",
+      "name": "Cedric",
+      "sprite": "person/person_male_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "edmund",
+      "name": "Edmund",
+      "sprite": "person/person_male_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "godfrey",
+      "name": "Godfrey",
+      "sprite": "person/person_male_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "geoffrey",
+      "name": "Geoffrey",
+      "sprite": "person/person_male_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "roland",
+      "name": "Roland",
+      "sprite": "person/person_male_paladin.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "tristan",
+      "name": "Tristan",
+      "sprite": "person/person_male_paladin.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "percival",
+      "name": "Percival",
+      "sprite": "person/person_male_paladin.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "lancelot",
+      "name": "Lancelot",
+      "sprite": "person/person_male_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "richard",
+      "name": "Richard",
+      "sprite": "person/person_male_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "oswald",
+      "name": "Oswald",
+      "sprite": "person/person_male_cleric.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "leofric",
+      "name": "Leofric",
+      "sprite": "person/person_male_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "theodoric",
+      "name": "Theodoric",
+      "sprite": "person/person_male_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "reynard",
+      "name": "Reynard",
+      "sprite": "person/person_male_thief.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "conrad",
+      "name": "Conrad",
+      "sprite": "person/person_male_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "bertram",
+      "name": "Bertram",
+      "sprite": "person/person_male_musician_drum.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "dance",
+      "exploration_xp": 25
+    },
+    {
+      "id": "lucian",
+      "name": "Lucian",
+      "sprite": "person/person_male_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "frederick",
+      "name": "Frederick",
+      "sprite": "person/person_male_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "galahad",
+      "name": "Galahad",
+      "sprite": "person/person_male_paladin.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "gawain",
+      "name": "Gawain",
+      "sprite": "person/person_male_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "anselm",
+      "name": "Anselm",
+      "sprite": "person/person_male_cleric.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "magnus",
+      "name": "Magnus",
+      "sprite": "person/person_male_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "wulfric",
+      "name": "Wulfric",
+      "sprite": "person/person_male_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "aethelred",
+      "name": "Aethelred",
+      "sprite": "person/person_male_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "balthazar",
+      "name": "Balthazar",
+      "sprite": "person/person_male_wizard.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "hadrian",
+      "name": "Hadrian",
+      "sprite": "person/person_male_alchemist.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "ulrich",
+      "name": "Ulrich",
+      "sprite": "person/person_male_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "freya",
+      "name": "Freya",
+      "sprite": "person/person_female_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "astrid",
+      "name": "Astrid",
+      "sprite": "person/person_female_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "sigrid",
+      "name": "Sigrid",
+      "sprite": "person/person_female_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "ingrid",
+      "name": "Ingrid",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "lagertha",
+      "name": "Lagertha",
+      "sprite": "person/person_female_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "thyra",
+      "name": "Thyra",
+      "sprite": "person/person_female_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "helga",
+      "name": "Helga",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "ragnhild",
+      "name": "Ragnhild",
+      "sprite": "person/person_female_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "solveig",
+      "name": "Solveig",
+      "sprite": "person/person_female_ranger.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "brynhild",
+      "name": "Brynhild",
+      "sprite": "person/person_female_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "gudrun",
+      "name": "Gudrun",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "sif",
+      "name": "Sif",
+      "sprite": "person/person_female_cleric.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "idun",
+      "name": "Idun",
+      "sprite": "person/person_female_druid.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "eira",
+      "name": "Eira",
+      "sprite": "person/person_female_ranger.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "alfhild",
+      "name": "Alfhild",
+      "sprite": "person/person_female_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "hilda",
+      "name": "Hilda",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "ylva",
+      "name": "Ylva",
+      "sprite": "person/person_female_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "gunnhild",
+      "name": "Gunnhild",
+      "sprite": "person/person_female_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "torhild",
+      "name": "Torhild",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "runa",
+      "name": "Runa",
+      "sprite": "person/person_female_wizard.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "svanhild",
+      "name": "Svanhild",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "asa",
+      "name": "Asa",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "liv",
+      "name": "Liv",
+      "sprite": "person/person_female_cleric.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "varnfell_frida",
+      "name": "Frida",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "signy",
+      "name": "Signy",
+      "sprite": "person/person_female_alchemist.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "hervor",
+      "name": "Hervor",
+      "sprite": "person/person_female_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "thora",
+      "name": "Thora",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "unn",
+      "name": "Unn",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "tove",
+      "name": "Tove",
+      "sprite": "person/person_female_musician_fiddle.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "dance",
+      "exploration_xp": 25
+    },
+    {
+      "id": "hjordis",
+      "name": "Hjordis",
+      "sprite": "person/person_female_thief.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "eleanor",
+      "name": "Eleanor",
+      "sprite": "person/person_female_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "guinevere",
+      "name": "Guinevere",
+      "sprite": "person/person_female_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "isolde",
+      "name": "Isolde",
+      "sprite": "person/person_female_paladin.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "adelaide",
+      "name": "Adelaide",
+      "sprite": "person/person_female_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "matilda",
+      "name": "Matilda",
+      "sprite": "person/person_female_fighter.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "beatrice",
+      "name": "Beatrice",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "rosamund",
+      "name": "Rosamund",
+      "sprite": "person/person_female_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "gwendolyn",
+      "name": "Gwendolyn",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "morgana",
+      "name": "Morgana",
+      "sprite": "person/person_female_wizard.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "rowena",
+      "name": "Rowena",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "agnes",
+      "name": "Agnes",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "cecilia",
+      "name": "Cecilia",
+      "sprite": "person/person_female_musician_recorder.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "dance",
+      "exploration_xp": 25
+    },
+    {
+      "id": "edith",
+      "name": "Edith",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "elspeth",
+      "name": "Elspeth",
+      "sprite": "person/person_female_alchemist.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "aveline",
+      "name": "Aveline",
+      "sprite": "person/person_female_paladin.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "genevieve",
+      "name": "Genevieve",
+      "sprite": "person/person_female_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "millicent",
+      "name": "Millicent",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "sybil",
+      "name": "Sybil",
+      "sprite": "person/person_female_cleric.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "constance",
+      "name": "Constance",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "helena",
+      "name": "Helena",
+      "sprite": "person/person_female_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "rosalind",
+      "name": "Rosalind",
+      "sprite": "person/person_female_ranger.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "philippa",
+      "name": "Philippa",
+      "sprite": "person/person_female_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "theodora",
+      "name": "Theodora",
+      "sprite": "person/person_female_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "adela",
+      "name": "Adela",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "melisende",
+      "name": "Melisende",
+      "sprite": "person/person_female_villager_noble.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "alys",
+      "name": "Alys",
+      "sprite": "person/person_female_thief.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "isabeau",
+      "name": "Isabeau",
+      "sprite": "person/person_female_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "eadith",
+      "name": "Eadith",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "margery",
+      "name": "Margery",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "emmeline",
+      "name": "Emmeline",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
     }
   ]
 }

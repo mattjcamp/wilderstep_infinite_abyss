@@ -9,7 +9,7 @@
       "entries": [
         {
           "steps": 0,
-          "text": "Smoke still curls from the wrecked wagons. Whoever did this left in a hurry. We should look around and find something to defend ourselves with and look for any survivors... use the arrow keys or WASD to move. "
+          "text": "Smoke still curls from the wrecked wagons. Whoever did this left in a hurry. We should look around and find something to defend ourselves with and look for any survivors... use WASD/arrow keys to move (touching the screen or using the on screen keypad works if you are on a mobile device). "
         },
         {
           "steps": 10,
@@ -17,7 +17,7 @@
         },
         {
           "steps": 20,
-          "text": "Tip: Press P to access the Party Screen to equip items, view characters and send found items to individual characters. Go to a character screen to equip items, use abilities and view character details."
+          "text": "Tip: Press P (or touch the Party Button if you are on mobile) to access the Party Screen to equip items, view characters and send found items to individual characters. Go to a character screen to equip items, use abilities and view character details."
         },
         {
           "steps": 30,
@@ -29,7 +29,7 @@
         },
         {
           "steps": 40,
-          "text": "Tip: Press H for help and to see what actions that you can take"
+          "text": "Tip: Press H (or Help Button) for help and to see what actions that you can take"
         }
       ]
     },

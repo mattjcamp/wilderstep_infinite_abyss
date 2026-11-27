@@ -28,7 +28,10 @@
         "mana_potion"
       ],
       "custom_map": "outdoor_arena",
-      "active_time_of_day": [],
+      "active_time_of_day": [
+        "dusk",
+        "night"
+      ],
       "active_moon_phases": [
         "full_moon"
       ]

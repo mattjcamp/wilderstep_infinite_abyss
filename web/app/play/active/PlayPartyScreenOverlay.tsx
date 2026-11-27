@@ -2395,7 +2395,7 @@ function BrewPicker({
               title={def?.description ?? def?.name ?? id}
             >
               <span className={dim ? "opacity-60" : ""}>
-                <ItemSprite icon={def?.icon} size={16} />
+                <ItemSprite icon={def?.icon} aflame={def?.aflame} size={16} />
               </span>
               {count > 1 ? `${count}× ` : ""}
               {def?.name ?? id}
@@ -2465,7 +2465,7 @@ function BrewPicker({
                           isReady ? "" : "opacity-60"
                         }`}
                       >
-                        <ItemSprite icon={out?.icon} size={32} />
+                        <ItemSprite icon={out?.icon} aflame={out?.aflame} size={32} />
                       </span>
                       <span className="font-display">
                         {recipe.name ?? out?.name ?? recipe.id}

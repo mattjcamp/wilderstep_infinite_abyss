@@ -75,3 +75,38 @@ body {
     max-height: calc(90dvh / 1.25) !important;
   }
 }
+
+/* Burning item icons (Sun Sword) — see src/editor/ItemSprite.tsx. A
+   flickering fire glow on the icon plus a few tiny embers rising off
+   it. Kept small so a list of items doesn't turn into a bonfire. */
+@keyframes item-aflame-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 1px #ff7a3a) drop-shadow(0 0 2px rgba(255, 122, 58, 0.55));
+  }
+  35% {
+    filter: drop-shadow(0 0 2px #ffce5c) drop-shadow(0 -1px 4px rgba(255, 96, 32, 0.75));
+  }
+  70% {
+    filter: drop-shadow(0 0 1px #ffb347) drop-shadow(0 0 3px rgba(255, 122, 58, 0.6));
+  }
+}
+@keyframes item-aflame-rise {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  15% { opacity: 0.95; }
+  100% { transform: translate(var(--drift, 0px), -110%) scale(0.35); opacity: 0; }
+}
+.item-aflame-icon {
+  animation: item-aflame-glow 1.1s ease-in-out infinite;
+}
+.item-aflame-ember {
+  position: absolute;
+  bottom: 18%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff1c2 0%, #ffce5c 45%, #ff7a3a 100%);
+  pointer-events: none;
+  animation: item-aflame-rise 0.9s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .item-aflame-icon { animation: none; filter: drop-shadow(0 0 2px #ff7a3a); }
+  .item-aflame-ember { display: none; }
+}

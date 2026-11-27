@@ -2023,6 +2023,76 @@ describe("MapSimulation — time-gated lairs", () => {
   });
 });
 
+describe("MapSimulation — dormant lairs vanish outside their window", () => {
+  const NOON = 0;
+  const MIDNIGHT = 12 * 60;
+
+  function makeDenSim(getClock: () => number | null) {
+    const grid: SimGrid = Array.from({ length: 5 }, () =>
+      Array.from({ length: 5 }, () => cell()),
+    );
+    grid[0][1] = cell({ spawn: "den" });
+    const sim = new MapSimulation({
+      grid,
+      party: makeParty({ start_position: { col: 0, row: 0 } }),
+      catalog: {
+        characters: [],
+        races: [],
+        effects: [],
+        spawns: [
+          {
+            id: "den",
+            name: "Night Den",
+            spawn_monsters: [],
+            spawn_chance: 0,
+            spawn_radius: 3,
+            max_spawned: 0,
+            boss_monsters: ["werewolf"],
+            xp_reward: 0,
+            gold_reward: 0,
+            loot: [],
+            active_time_of_day: ["night"],
+          },
+        ],
+      },
+      classNameById: new Map(),
+      bridge: fakeBridge(),
+      getClockMinutes: getClock,
+    });
+    return sim;
+  }
+
+  it("reports the lair dormant outside its hours and awake inside", () => {
+    let clock = NOON;
+    const sim = makeDenSim(() => clock);
+    expect(sim.isLairDormant("1,0")).toBe(true);
+    clock = MIDNIGHT;
+    expect(sim.isLairDormant("1,0")).toBe(false);
+    // Non-lair cells are never "dormant".
+    expect(sim.isLairDormant("2,2")).toBe(false);
+  });
+
+  it("stepping onto a dormant lair is just a normal step — no boss fight", () => {
+    const sim = makeDenSim(() => NOON);
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    expect(kinds(events)).not.toContain("spawn_encountered");
+    expect(sim.snapshot().pos).toEqual({ col: 1, row: 0 });
+  });
+
+  it("an awake lair still opens its boss fight", () => {
+    const sim = makeDenSim(() => MIDNIGHT);
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    expect(kinds(events)).toContain("spawn_encountered");
+  });
+
+  it("editor sim (no clock) treats every lair as awake", () => {
+    const sim = makeDenSim(() => null);
+    expect(sim.isLairDormant("1,0")).toBe(false);
+  });
+});
+
 describe("MapSimulation.planWalkTo — touch tap-to-walk", () => {
   it("routes around a wall and ends in a bump on an NPC", () => {
     const grid = makeGrid();

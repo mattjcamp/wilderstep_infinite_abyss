@@ -3139,3 +3139,110 @@ export function partyDeathBanner(
 }
 
 export const VFX_COLOURS = COLOURS;
+
+/** Where a held weapon sits on a character sprite, as a fraction of
+ *  the sprite's size measured from its centre. Every person sprite's
+ *  art holds its weapon on the viewer's left (shield / off hand on the
+ *  right): the hand / hilt sits a little below centre, the blade rises
+ *  above it. Sprites mirror (`flipX`) to face the way they walk, which
+ *  moves the weapon to the other side — the anchor's `flip` mirrors
+ *  these offsets to match. */
+const WEAPON_HAND = { dx: -0.3, dy: 0.16 };
+const WEAPON_BLADE_MID = { dx: -0.36, dy: -0.08 };
+
+/** Anchor for {@link startHandFlame}: the sprite's current centre and
+ *  display size, or `null` to pause (hidden / fallen / no sprite). */
+export type HandFlameAnchor = () => {
+  x: number;
+  y: number;
+  size: number;
+  /** Sprite is mirrored (facing left) — weapon is on the other side. */
+  flip?: boolean;
+} | null;
+
+/**
+ * Persistent, subtle fire on a character's weapon hand — used for
+ * `aflame` weapons (the Sun Sword) on the overworld party sprite and
+ * on the wielder's body in combat.
+ *
+ * A soft additive glow sits on the hand and flickers; every ~80 ms a
+ * small flame tongue spawns somewhere between the hand and the middle
+ * of the blade (weighted toward the hand), rises a few pixels and
+ * fades. The anchor is re-read on every frame / spawn, so the effect
+ * follows the sprite through slides and tweens without any wiring,
+ * and pauses whenever the anchor returns null.
+ *
+ * Returns a stop function. Also stops itself on scene shutdown.
+ */
+export function startHandFlame(
+  scene: Phaser.Scene,
+  anchor: HandFlameAnchor,
+  opts: { depth: number },
+): () => void {
+  const ADD = 1; // Phaser.BlendModes.ADD (type-only import here)
+  const glow = scene.add
+    .circle(0, 0, 4, COLOURS.fire, 0)
+    .setDepth(opts.depth)
+    .setBlendMode(ADD);
+  let stopped = false;
+  let t = 0;
+
+  const onUpdate = (_time: number, delta: number) => {
+    const a = anchor();
+    if (!a) {
+      glow.setAlpha(0);
+      return;
+    }
+    t += delta;
+    const flicker = 0.5 + 0.5 * Math.sin(t / 90) * Math.sin(t / 37 + 1.3);
+    const side = a.flip ? -1 : 1;
+    glow
+      .setPosition(
+        a.x + side * WEAPON_HAND.dx * a.size,
+        a.y + WEAPON_HAND.dy * a.size,
+      )
+      .setRadius(a.size * (0.11 + 0.02 * flicker))
+      .setAlpha(0.22 + 0.16 * flicker);
+  };
+  scene.events.on("update", onUpdate);
+
+  const colors = [COLOURS.ember, COLOURS.fire, 0xfff1c2, COLOURS.fire];
+  let n = 0;
+  const spawn = () => {
+    const a = anchor();
+    if (!a) return;
+    // Bias toward the hand: square a uniform draw.
+    const f = Math.random() ** 2;
+    const dx = lerp(WEAPON_HAND.dx, WEAPON_BLADE_MID.dx, f);
+    const dy = lerp(WEAPON_HAND.dy, WEAPON_BLADE_MID.dy, f);
+    const x =
+      a.x + (a.flip ? -dx : dx) * a.size + (Math.random() - 0.5) * a.size * 0.06;
+    const y = a.y + dy * a.size;
+    const tongue = scene.add
+      .ellipse(x, y, a.size * 0.06, a.size * 0.1, colors[n++ % colors.length], 0.85)
+      .setDepth(opts.depth + 1)
+      .setBlendMode(ADD);
+    scene.tweens.add({
+      targets: tongue,
+      y: y - a.size * (0.12 + Math.random() * 0.08),
+      x: x + (Math.random() - 0.5) * a.size * 0.05,
+      scaleX: 0.4,
+      scaleY: 1.2,
+      alpha: 0,
+      duration: 360 + Math.random() * 180,
+      onComplete: () => tongue.destroy(),
+    });
+  };
+  const timer = scene.time.addEvent({ delay: 80, loop: true, callback: spawn });
+
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    timer.remove();
+    scene.events.off("update", onUpdate);
+    scene.events.off("shutdown", stop);
+    glow.destroy();
+  };
+  scene.events.once("shutdown", stop);
+  return stop;
+}

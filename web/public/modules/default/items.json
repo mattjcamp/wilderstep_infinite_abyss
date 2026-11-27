@@ -305,7 +305,8 @@
       ],
       "combat_aura": {
         "color": 16766800
-      }
+      },
+      "aflame": true
     },
     {
       "id": "stoneguard_plate",

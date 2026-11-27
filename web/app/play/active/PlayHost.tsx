@@ -816,11 +816,39 @@ interface PlayMapRecord {
 /** Minimal item shape PlayHost uses to render overlays. The full
  *  v2 item record carries more (slots, durability, buy/sell, etc.);
  *  only the icon is read here. */
+/** Does a living party member have an `aflame` item (Sun Sword)
+ *  equipped? Polled every frame by the overworld renderer, so the
+ *  answer is cached per save object (saves are replaced, not mutated,
+ *  on every change). */
+const aflameCache = new WeakMap<object, boolean>();
+function partyWieldsAflame(
+  save: WorldSave | null,
+  items: ReadonlyArray<PlayItem> | undefined,
+): boolean {
+  if (!save || !items) return false;
+  const cached = aflameCache.get(save);
+  if (cached !== undefined) return cached;
+  const aflame = new Set(items.filter((i) => i.aflame).map((i) => i.id));
+  const roster = new Set(save.party.roster);
+  const result =
+    aflame.size > 0 &&
+    save.party.members.some(
+      (m) =>
+        roster.has(m.id) &&
+        m.hp > 0 &&
+        Object.values(m.equipped ?? {}).some((id) => aflame.has(id)),
+    );
+  aflameCache.set(save, result);
+  return result;
+}
+
 interface PlayItem {
   id: string;
   name?: string;
   description?: string;
   icon?: string;
+  /** Burning weapon (Sun Sword) — fire on the wielder's hand + icon. */
+  aflame?: boolean;
   /** True when multiple copies of this id collapse into one
    *  inventory row (Torch, Arrows, Lockpicks, …). Read by the
    *  stacking helpers when granting quest rewards or loot. */
@@ -3737,6 +3765,8 @@ export function PlayHost() {
             scene: this,
             grid: catalog.map.grid,
             partyAvatar: save.party.avatar,
+            partyAflame: () =>
+              partyWieldsAflame(saveRef.current, catalogRef.current?.items),
             partyHasInfravision,
             // Drive the initial lighting from the saved clock —
             // day at noon, night past dusk, twilight in the
@@ -3834,12 +3864,16 @@ export function PlayHost() {
               // Lair markers follow the terrain rule, not the
               // live-entity rule: hidden only under unexplored cover,
               // otherwise tinted like the cell (dim when remembered).
+              // A scheduled lair outside its time-of-day / moon-phase
+              // window is dormant and hidden outright — the werewolf
+              // den simply isn't there until the full moon.
+              const liveSim = simRef.current;
               for (const [key, img] of this.lairOverlays) {
                 const [cs, rs] = key.split(",");
                 const c = Number(cs);
                 const r = Number(rs);
                 const info = result.cells.get(key);
-                if (info?.isUnexplored) {
+                if (info?.isUnexplored || liveSim?.isLairDormant(key)) {
                   img.setVisible(false);
                   continue;
                 }
@@ -5231,6 +5265,10 @@ export function PlayHost() {
           for (const key of sim.snapshot().destroyedLairs) {
             this.removeLairOverlay(key);
           }
+          // The kernel's constructor relit before simRef was set, so
+          // the lair pass couldn't see which lairs are dormant yet.
+          // One more pass hides out-of-window lairs from the start.
+          this.world?.relight();
           // Landing after a pit fall: the party drops in from above
           // with a thud, a burst of dust and a shake, then the fall
           // card says what happened.
@@ -8269,6 +8307,7 @@ export function PlayHost() {
             id: row.id,
             name: def?.name,
             icon: def?.icon,
+            aflame: def?.aflame,
             qty: row.qty,
           };
         });
@@ -8502,6 +8541,10 @@ export function PlayHost() {
               );
               clockRef.current = next.clockMinutes;
               setClockMinutes(next.clockMinutes);
+              // Re-run the overlay pass so scheduled lairs appear /
+              // vanish for the new hour (e.g. resting into daylight
+              // hides a night-only graveyard).
+              rendererRef.current?.relight();
               const afterMode = lightingModeFromClock(next.clockMinutes);
               const mapOverride = mapForcedLightingMode(
                 catalogRef.current?.map,

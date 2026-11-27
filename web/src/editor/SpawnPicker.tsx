@@ -15,6 +15,7 @@
  */
 
 import { useState } from "react";
+import { matchesQuery, PickerDialogFrame } from "./PickerDialog";
 import { spriteUrl } from "@/data_model/spriteUrl";
 
 /** The slice of a Spawn the picker reads (extra fields ignored). */
@@ -50,10 +51,16 @@ export function SpawnPicker({
   value,
   spawns,
   onChange,
+  dialog = false,
+  dialogTitle = "Spawn",
 }: {
   value: string;
   spawns: ReadonlyArray<SpawnPickerEntry>;
   onChange: (value: string) => void;
+  /** Open the list as a large centred dialog (Map editor) instead of
+   *  expanding inline under the field. */
+  dialog?: boolean;
+  dialogTitle?: string;
 }) {
   const [open, setOpen] = useState(false);
   const current = spawns.find((s) => s.id === value) ?? null;
@@ -66,36 +73,14 @@ export function SpawnPicker({
       ? (current.name ?? current.id)
       : `${value} ⚠`;
 
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex flex-1 items-center gap-2 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-sm text-parchment hover:bg-ink/60"
-          aria-expanded={open}
-        >
-          <span className="text-parchment/60">{open ? "▾" : "▸"}</span>
-          {value ? <LairThumb path={spriteOf(current)} alt={summary} /> : null}
-          <span className="truncate">{summary}</span>
-        </button>
-        {value ? (
-          <button
-            type="button"
-            onClick={() => onChange("")}
-            className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
-            title="Clear the spawn (this cell stops being a lair)."
-          >
-            ✕
-          </button>
-        ) : null}
-      </div>
-
-      {open ? (
-        <div className="mt-1 max-h-72 overflow-auto rounded border border-parchment/15 bg-ink/60 p-2">
-          {spawns.length === 0 ? (
+  const [query, setQuery] = useState("");
+  const q = dialog ? query.trim() : "";
+  const shown = sorted.filter((e) => matchesQuery(`${e.name ?? ""} ${e.id} ${strList(e.spawn_monsters).join(" ")} ${strList(e.boss_monsters).join(" ")}`, q));
+  const listBody = (
+    <>
+          {shown.length === 0 ? (
             <p className="text-[13px] text-parchment/70">
-              No spawns defined in this module.
+              {q ? `No spawns match “${q}”.` : "No spawns defined in this module."}
             </p>
           ) : (
             <ul className="space-y-1">
@@ -116,7 +101,7 @@ export function SpawnPicker({
                   <span className="font-mono text-parchment/70">(none)</span>
                 </button>
               </li>
-              {sorted.map((s) => {
+              {shown.map((s) => {
                 const isActive = s.id === value;
                 const roamers = summarizeRoster(s.spawn_monsters);
                 const boss = summarizeRoster(s.boss_monsters);
@@ -174,7 +159,55 @@ export function SpawnPicker({
               })}
             </ul>
           )}
+    </>
+  );
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex flex-1 items-center gap-2 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-sm text-parchment hover:bg-ink/60"
+          aria-expanded={open}
+        >
+          {dialog ? null : <span className="text-parchment/60">{open ? "▾" : "▸"}</span>}
+          {value ? <LairThumb path={spriteOf(current)} alt={summary} /> : null}
+          <span className="truncate">{summary}</span>
+          {dialog ? (
+            <span aria-hidden className="ml-auto shrink-0 text-parchment/50">
+              ⋯
+            </span>
+          ) : null}
+        </button>
+        {value ? (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
+            title="Clear the spawn (this cell stops being a lair)."
+          >
+            ✕
+          </button>
+        ) : null}
+      </div>
+
+      {open && !dialog ? (
+        <div className="mt-1 max-h-72 overflow-auto rounded border border-parchment/15 bg-ink/60 p-2">
+          {listBody}
         </div>
+      ) : null}
+      {open && dialog ? (
+        <PickerDialogFrame
+          title={dialogTitle}
+          count={q ? `${shown.length} of ${sorted.length}` : `${sorted.length} spawns`}
+          search={query}
+          onSearch={setQuery}
+          searchPlaceholder="Search name, id or monsters…"
+          onClose={() => setOpen(false)}
+        >
+          <div className="text-[15px]">{listBody}</div>
+        </PickerDialogFrame>
       ) : null}
     </div>
   );

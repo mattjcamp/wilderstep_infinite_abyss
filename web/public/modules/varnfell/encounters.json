@@ -1,0 +1,25 @@
+{
+  "encounters": [
+    {
+      "id": "fire_elemental",
+      "name": "Fire Elemental",
+      "area": "dungeon",
+      "theme": "elemental",
+      "tags": [
+        "Elementals"
+      ],
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "monster/fire_elemental.png",
+      "monsters": [
+        "fire_elemental",
+        "fire_elemental",
+        "imp",
+        "imp",
+        "imp"
+      ],
+      "custom_map": "volcano_battle",
+      "darkness": false
+    }
+  ]
+}

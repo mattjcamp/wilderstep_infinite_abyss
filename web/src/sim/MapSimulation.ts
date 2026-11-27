@@ -1265,7 +1265,12 @@ export class MapSimulation {
     const quest = (cell as { quest?: string }).quest;
     if (quest && this.questCatalog.has(quest)) return "interact";
     if (this.isCellLocked(c, r)) return "interact";
-    if (cell.spawn && this.spawnCatalog.has(cell.spawn) && !this.destroyedLairs.has(key)) {
+    if (
+      cell.spawn &&
+      this.spawnCatalog.has(cell.spawn) &&
+      !this.destroyedLairs.has(key) &&
+      !this.isLairDormant(key)
+    ) {
       return "interact";
     }
     if (cell.item && this.chestItemIds.has(cell.item)) return "interact";
@@ -2237,6 +2242,26 @@ export class MapSimulation {
     return id && id.length > 0 ? id : null;
   }
 
+  /** Current game-clock minute, or null when the host supplies no
+   *  clock (editor sim, tests) — null means every lair is awake. */
+  private currentClock(): number | null {
+    return this.getClockMinutes?.() ?? null;
+  }
+
+  /** True when the cell at `key` ("col,row") holds a live lair whose
+   *  spawn is outside its `active_time_of_day` / `active_moon_phases`
+   *  window right now. A dormant lair is effectively absent: no
+   *  marker (the host hides it), no roamers, no boss fight on step.
+   *  Unscheduled, destroyed, or non-lair cells return false. */
+  isLairDormant(key: string): boolean {
+    if (this.destroyedLairs.has(key)) return false;
+    const spawnId = this.spawnIdAtSourceKey(key);
+    if (!spawnId) return false;
+    const spawn = this.spawnCatalog.get(spawnId);
+    if (!spawn) return false;
+    return !isSpawnActive(spawn, this.currentClock());
+  }
+
   /** Build the SpawnEncounterOptions snapshot for a lair the party
    *  just stepped onto. Returns null when the destination cell isn't
    *  a live lair (no spawn id, unknown id, destroyed, or empty
@@ -2251,6 +2276,9 @@ export class MapSimulation {
     if (this.destroyedLairs.has(key)) return null;
     const spawn = this.spawnCatalog.get(spawnId);
     if (!spawn) return null;
+    // A scheduled lair outside its time / moon window is dormant —
+    // it isn't there to be found, so stepping on it does nothing.
+    if (!isSpawnActive(spawn, this.currentClock())) return null;
     const roster = spawn.boss_monsters.length > 0
       ? [...spawn.boss_monsters]
       : [...spawn.spawn_monsters];
@@ -2284,7 +2312,7 @@ export class MapSimulation {
       >,
       this.spawnCatalog,
     );
-    const clock = this.getClockMinutes?.() ?? null;
+    const clock = this.currentClock();
     // Scheduled lairs (active_time_of_day / active_moon_phases) that
     // are out of their window this step: they spawn nothing, and any
     // roamers they already put out withdraw — undead melt away at

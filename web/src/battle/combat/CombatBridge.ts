@@ -376,6 +376,7 @@ export function combatantFromMember(
     typeof equippedWeapon?.combat_aura?.color === "number"
       ? equippedWeapon.combat_aura.color
       : undefined;
+  const wieldFlame = equippedWeapon?.aflame === true || undefined;
   return {
     id: `pm:${member.id}`,
     name: member.name,
@@ -417,6 +418,7 @@ export function combatantFromMember(
     weaponRanged: equippedWeapon?.ranged === true,
     passives: wielderPassives,
     wieldAuraColor,
+    wieldFlame,
   };
 }
 
@@ -494,6 +496,7 @@ export function refreshCombatantGear(
     typeof weapon?.combat_aura?.color === "number"
       ? weapon.combat_aura.color
       : undefined;
+  c.wieldFlame = weapon?.aflame === true || undefined;
 }
 
 /**

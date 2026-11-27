@@ -1142,7 +1142,7 @@ function EquipRow({
     <>
       <span className="text-parchment/85">{slot}</span>
       <span className="flex min-w-0 items-center gap-2 text-parchment/95">
-        {itemId ? <ItemSprite icon={def?.icon} size={18} /> : null}
+        {itemId ? <ItemSprite icon={def?.icon} aflame={def?.aflame} size={18} /> : null}
         <span className="truncate">{label}</span>
       </span>
       <span className="justify-self-end">

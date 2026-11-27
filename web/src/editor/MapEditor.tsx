@@ -87,6 +87,10 @@ import {
   type QuestPlacardTarget,
 } from "@/play/questPlacardTargets";
 import { SpritePicker } from "./SpritePicker";
+import { BACKGROUND_SPRITE_CONFIG } from "./spriteFields";
+import { RecordPickerField, type RecordPickerOption } from "./RecordPicker";
+import { PickerDialogFrame, PickerToolbarButton } from "./PickerDialog";
+import { spriteTags } from "@/data_model/spriteTags";
 import { LootEditor, type LootStash } from "./LootEditor";
 import { EncounterPicker } from "./EncounterPicker";
 import { SpawnPicker } from "./SpawnPicker";
@@ -6046,7 +6050,7 @@ function Inspector({
           >
             <SpritePicker
               value={instance.background_sprite ?? ""}
-              config={{ category: "map", format: "path" }}
+              config={BACKGROUND_SPRITE_CONFIG}
               onChange={(v) =>
                 onUpdate({ background_sprite: v ? v : undefined })
               }
@@ -6231,9 +6235,12 @@ function Inspector({
               { value: "", label: "(none)" },
               ...counters.map((c) => ({
                 value: c.id,
+                name: c.name || undefined,
                 label: c.name ? `${c.name} — ${c.id}` : c.id,
               })),
             ]}
+            dialogTitle="Counter"
+            noun="counter"
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "counter")
             }
@@ -6255,6 +6262,7 @@ function Inspector({
             onReset={() => onUpdate({ encounter: undefined })}
           >
             <EncounterPicker
+              dialog
               value={instance.encounter ?? ""}
               encounters={encounters}
               onChange={(v) => onUpdate({ encounter: v })}
@@ -6285,6 +6293,7 @@ function Inspector({
             onReset={() => onUpdate({ spawn: undefined })}
           >
             <SpawnPicker
+              dialog
               value={instance.spawn ?? ""}
               spawns={spawns}
               onChange={(v) => onUpdate({ spawn: v })}
@@ -6314,9 +6323,13 @@ function Inspector({
               label: g.label,
               options: g.items.map((i) => ({
                 value: i.id,
+                name: i.name || undefined,
                 label: i.name ? `${i.name} — ${i.id}` : i.id,
+                thumb: i.icon ? spriteUrl(`item/${i.icon}.png`) : null,
               })),
             }))}
+            dialogTitle="Item"
+            noun="item"
             previewSrc={(() => {
               const id = instance.item ?? "";
               if (!id) return null;
@@ -6364,10 +6377,6 @@ function Inspector({
             paletteValue={base?.npc ?? instance.npc ?? ""}
             options={[
               { value: "", label: "(none)" },
-              ...npcs.map((n) => ({
-                value: n.id,
-                label: n.name ? `${n.name} — ${n.id}` : n.id,
-              })),
               // Preserve a value pointing at an NPC not in the catalog
               // (forward reference / library record) so it round-trips
               // through save / load.
@@ -6381,6 +6390,9 @@ function Inspector({
                   ]
                 : []),
             ]}
+            optionGroups={groupNpcsByRole(npcs)}
+            dialogTitle="NPC"
+            noun="NPC"
             previewSrc={(() => {
               const id = instance.npc ?? "";
               if (!id) return null;
@@ -6413,6 +6425,7 @@ function Inspector({
               { value: "", label: "(none)" },
               ...availableQuests.map((q) => ({
                 value: q.id,
+                name: q.name || undefined,
                 label: q.name ? `${q.name} — ${q.id}` : q.id,
               })),
               // Preserve a value pointing at a quest not in the catalog
@@ -6427,6 +6440,8 @@ function Inspector({
                   ]
                 : []),
             ]}
+            dialogTitle="Quest"
+            noun="quest"
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "quest")
             }
@@ -6444,6 +6459,7 @@ function Inspector({
               { value: "", label: "(none)" },
               ...availableDungeons.map((d) => ({
                 value: d.id,
+                name: d.name || undefined,
                 label: d.name ? `${d.name} — ${d.id}` : d.id,
               })),
               ...(instance.dungeon &&
@@ -6456,6 +6472,8 @@ function Inspector({
                   ]
                 : []),
             ]}
+            dialogTitle="Dungeon"
+            noun="dungeon"
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "dungeon")
             }
@@ -6473,6 +6491,7 @@ function Inspector({
               { value: "", label: "(none)" },
               ...availableTraps.map((t) => ({
                 value: t.id,
+                name: t.name !== t.id ? t.name : undefined,
                 label: t.name !== t.id ? `${t.name} — ${t.id}` : t.id,
               })),
               ...(instance.trap_id &&
@@ -6485,6 +6504,8 @@ function Inspector({
                   ]
                 : []),
             ]}
+            dialogTitle="Trap"
+            noun="trap"
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "trap_id")
             }
@@ -6502,6 +6523,7 @@ function Inspector({
               { value: "", label: "(none)" },
               ...availableLore.map((l) => ({
                 value: l.id,
+                name: l.name !== l.id ? l.name : undefined,
                 label: l.name !== l.id ? `${l.name} — ${l.id}` : l.id,
               })),
               ...(instance.lore &&
@@ -6514,6 +6536,8 @@ function Inspector({
                   ]
                 : []),
             ]}
+            dialogTitle="Lore"
+            noun="lore entry"
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "lore")
             }
@@ -6756,6 +6780,38 @@ function StringEditor({
 /** Generic enum/select attribute editor — dropdown + palette default
  *  annotation + reset. Used for `animation` and any future enumerated
  *  per-cell field. */
+/** NPC picker groups — by the Role tag of each NPC's sprite
+ *  ("Villager", "Fighter", "Animal" …), alphabetical, with sprite
+ *  thumbnails. */
+function groupNpcsByRole(
+  npcs: ReadonlyArray<{ id: string; name?: string; sprite?: string }>,
+): Array<{ label: string; options: RecordPickerOption[] }> {
+  const by = new Map<string, RecordPickerOption[]>();
+  for (const n of npcs) {
+    const sprite = n.sprite ?? "";
+    const role =
+      spriteTags(sprite).find((t) => t.category === "Role")?.value ?? "Other";
+    const opt: RecordPickerOption = {
+      value: n.id,
+      name: n.name || undefined,
+      label: n.name ? `${n.name} — ${n.id}` : n.id,
+      thumb: sprite
+        ? spriteUrl(sprite.includes("/") ? sprite : `person/${sprite}`)
+        : null,
+    };
+    if (!by.has(role)) by.set(role, []);
+    by.get(role)!.push(opt);
+  }
+  return [...by.keys()]
+    .sort((a, b) => (a === "Other" ? 1 : b === "Other" ? -1 : a.localeCompare(b)))
+    .map((label) => ({
+      label,
+      options: by
+        .get(label)!
+        .sort((a, b) => (a.name ?? a.value).localeCompare(b.name ?? b.value)),
+    }));
+}
+
 function SelectEditor({
   label,
   help,
@@ -6764,6 +6820,8 @@ function SelectEditor({
   options,
   optionGroups,
   previewSrc,
+  dialogTitle,
+  noun,
   isModified,
   canReset,
   onChange,
@@ -6774,17 +6832,23 @@ function SelectEditor({
   value: string;
   paletteValue: string;
   /** Top-level (ungrouped) options — e.g. the leading "(none)". */
-  options: Array<{ value: string; label: string }>;
+  options: Array<RecordPickerOption>;
   /** Optional "Category › Type" optgroups, rendered after `options`.
    *  When present, the grouped options also feed the palette-label
    *  lookup below. */
   optionGroups?: Array<{
     label: string;
-    options: Array<{ value: string; label: string }>;
+    options: Array<RecordPickerOption>;
   }>;
   /** Optional sprite path to show as a thumbnail next to the select.
    *  Used by Encounter to surface the encounter's monster_party_tile. */
   previewSrc?: string | null;
+  /** When set, replace the <select> with a trigger button that opens a
+   *  large centred picker dialog (search, groups, thumbnails) — the
+   *  same frame as the Link map picker. */
+  dialogTitle?: string;
+  /** Record noun for the dialog's count line ("item" → "12 items"). */
+  noun?: string;
   isModified: boolean;
   canReset: boolean;
   onChange: (v: string) => void;
@@ -6803,6 +6867,16 @@ function SelectEditor({
       canReset={canReset}
       onReset={onReset}
     >
+      {dialogTitle ? (
+        <RecordPickerField
+          title={dialogTitle}
+          value={value}
+          options={options}
+          groups={optionGroups}
+          noun={noun}
+          onChange={onChange}
+        />
+      ) : (
       <div className="flex items-start gap-2">
         <select
           value={value}
@@ -6839,6 +6913,7 @@ function SelectEditor({
           />
         ) : null}
       </div>
+      )}
       <p className="mt-0.5 text-xs text-parchment/60">
         palette: {allOptions.find((o) => o.value === paletteValue)?.label ?? paletteValue}
       </p>
@@ -6985,27 +7060,35 @@ function PaletteTilePicker({
         </span>
         <button
           type="button"
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => setOpen(true)}
           className="rounded border border-parchment/30 px-2 py-0.5 text-xs text-parchment/85 hover:bg-ink/40"
-          title={
-            open
-              ? "Close the tile picker."
-              : "Pick the replacement tile from the palette (grouped by tag, with sprite previews)."
-          }
+          title="Pick the replacement tile from the palette (grouped by tag, with sprite previews)."
         >
-          {open ? "Done" : "Pick…"}
+          Pick…
         </button>
       </div>
       {open ? (
-        <div className="rounded border border-parchment/15 bg-ink/40 p-1.5">
-          <input
-            type="text"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter by name, id, or tag…"
-            className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
-          />
-          <div className="mt-1.5 max-h-56 space-y-1.5 overflow-auto pr-1">
+        <PickerDialogFrame
+          title="Replacement tile"
+          count={q ? `${matches.length} of ${palette.length} tiles` : `${palette.length} tiles`}
+          search={filter}
+          onSearch={setFilter}
+          searchPlaceholder="Filter by name, id, or tag…"
+          onClose={() => setOpen(false)}
+          toolbar={
+            <>
+              <PickerToolbarButton onClick={() => setCollapsed(new Set())}>
+                Expand all
+              </PickerToolbarButton>
+              <PickerToolbarButton
+                onClick={() => setCollapsed(collectTileTagPaths(palette))}
+              >
+                Collapse all
+              </PickerToolbarButton>
+            </>
+          }
+        >
+          <div className="space-y-1.5 text-[15px]">
             <TileTagSections
               nodes={tree}
               depth={0}
@@ -7064,7 +7147,7 @@ function PaletteTilePicker({
               </p>
             ) : null}
           </div>
-        </div>
+        </PickerDialogFrame>
       ) : null}
     </div>
   );

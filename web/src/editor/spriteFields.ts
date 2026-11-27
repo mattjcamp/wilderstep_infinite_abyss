@@ -29,7 +29,40 @@ export interface SpriteFieldConfig {
   category: string;
   /** How the saved value is shaped. See file header. */
   format: "path" | "stem";
+  /** Open the browser as a large centred dialog (like the Link map
+   *  picker) instead of expanding inline under the field. */
+  dialog?: boolean;
+  /** Dialog heading when `dialog` is set. */
+  dialogTitle?: string;
+  /** Restrict the browser to these top-level sprite folders. Omitted
+   *  = every folder. */
+  categories?: ReadonlyArray<string>;
+  /** Show the Race / Gender / Role / Detail tag filter bar (useful for
+   *  people sprites). Defaults to true. */
+  tagFilters?: boolean;
 }
+
+/** Sprite folders that hold map terrain — the only sensible sources
+ *  for a tile's background. */
+export const MAP_TERRAIN_CATEGORIES: ReadonlyArray<string> = [
+  "map",
+  "dungeons",
+  "water",
+  "paths",
+  "town",
+  "fences",
+];
+
+/** Config for a tile's `background_sprite`, shared by the Map Editor
+ *  inspector and the Map Tiles record form. */
+export const BACKGROUND_SPRITE_CONFIG: SpriteFieldConfig = {
+  category: "map",
+  format: "path",
+  dialog: true,
+  dialogTitle: "Background tile",
+  categories: MAP_TERRAIN_CATEGORIES,
+  tagFilters: false,
+};
 
 /** Global field-name → config map. Used when no model-specific
  *  override applies. */
@@ -57,7 +90,7 @@ const PER_MODEL: Record<string, Record<string, SpriteFieldConfig>> = {
   map_tiles: {
     sprite: { category: "map", format: "path" },
     // Drawn behind `sprite` (shows through its transparent pixels).
-    background_sprite: { category: "map", format: "path" },
+    background_sprite: BACKGROUND_SPRITE_CONFIG,
   },
   monsters: {
     sprite: { category: "monster", format: "path" },

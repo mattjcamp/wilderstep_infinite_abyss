@@ -3625,7 +3625,10 @@
         ]
       ],
       "lighting": "day",
-      "fog_of_war": false
+      "fog_of_war": false,
+      "soundtrack": [
+        "/audio/Action 6 Loop.mp3"
+      ]
     },
     {
       "id": "overview_1",

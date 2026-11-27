@@ -74,6 +74,7 @@ import {
   type StepAnimConfig,
 } from "@/vfx/stepAnim";
 import { spriteUrl } from "@/data_model/spriteUrl";
+import { startHandFlame } from "@/vfx/Vfx";
 
 // Re-exported so callers configuring the renderer can reach the
 // step-animation types without a second import path. The battle
@@ -182,6 +183,10 @@ export interface WorldRendererConfig {
    *  a generated `__party_marker` texture when this is empty or the
    *  named texture didn't load. */
   partyAvatar?: string;
+  /** Polled while the party sprite is shown: true when someone in the
+   *  party wields an `aflame` weapon (Sun Sword), which draws a small
+   *  fire at the party sprite's weapon hand. Omitted = never. */
+  partyAflame?: () => boolean;
   /** How long, in ms, the party / roamer sprites take to slide between
    *  cells. Defaults to {@link DEFAULT_MOVE_TWEEN_MS}. Pass 0 for the
    *  original instant snap — useful for the editor's paint mode, for
@@ -437,6 +442,21 @@ export class WorldRenderer {
     this.scene = cfg.scene;
     this.grid = cfg.grid;
     this.partyAvatar = cfg.partyAvatar ?? "";
+    const partyAflame = cfg.partyAflame;
+    if (partyAflame) {
+      // Stops itself on scene shutdown; the anchor pauses whenever the
+      // party isn't drawn or nobody holds a burning weapon, so equip /
+      // unequip shows up on the next frame without extra wiring.
+      startHandFlame(
+        this.scene,
+        () => {
+          const sp = this.partySprite;
+          if (!sp || !sp.visible || !sp.active || !partyAflame()) return null;
+          return { x: sp.x, y: sp.y, size: sp.displayWidth, flip: sp.flipX };
+        },
+        { depth: 301 },
+      );
+    }
     this.partyHasInfravision = !!cfg.partyHasInfravision;
     this.partyInfravisionActive = !!cfg.initialInfravisionActive;
     this.lightingMode = cfg.initialLightingMode ?? "night";

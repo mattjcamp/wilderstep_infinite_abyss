@@ -127,6 +127,11 @@ export interface Item {
    *  RGB integer — the CombatScene tweens a ring of this colour
    *  every ~0.7s, anchored to the wielder's current cell. */
   combat_aura?: { color?: number };
+  /** Burning weapon (Sun Sword): the wielder's weapon hand carries a
+   *  small persistent flame on the overworld party sprite and on their
+   *  body in combat, and the item's icon flickers with fire in every
+   *  inventory list. */
+  aflame?: boolean;
   /**
    * Firing mode for ranged weapons (`ranged: true`). `"target"` is
    * the familiar pick-an-enemy-from-the-list flow with LOS gating —

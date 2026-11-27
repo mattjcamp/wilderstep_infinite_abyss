@@ -37,6 +37,8 @@ import { ItemSprite } from "@/editor/ItemSprite";
 
 interface ShopItemRef {
   id: string;
+  /** Burning item (Sun Sword) — its icon flickers with fire. */
+  aflame?: boolean;
   name?: string;
   description?: string;
   icon?: string;
@@ -825,7 +827,7 @@ export function PlayCounterShopOverlay({
                       ].join(" ")}
                     >
                       <span className="flex min-w-0 items-center gap-2">
-                        <ItemSprite icon={def?.icon} />
+                        <ItemSprite icon={def?.icon} aflame={def?.aflame} />
                         <span className="truncate">
                           {itemLabel(id)}
                           {bundle > 1 ? (
@@ -911,7 +913,7 @@ export function PlayCounterShopOverlay({
                       ].join(" ")}
                     >
                       <span className="flex min-w-0 items-center gap-2">
-                        <ItemSprite icon={def?.icon} />
+                        <ItemSprite icon={def?.icon} aflame={def?.aflame} />
                         <span className="truncate">
                           {itemLabel(entry.item)}
                           {qtyLabel}

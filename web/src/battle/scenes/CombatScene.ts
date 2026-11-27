@@ -120,6 +120,7 @@ import {
   radialBurst,
   healingSparkles,
   glowAura,
+  startHandFlame,
   screenShake,
   floatingX,
   shatterEffect,
@@ -859,6 +860,10 @@ export class CombatScene extends Phaser.Scene {
    *  move across the arena. Cleared on scene init (defensive) and
    *  re-seeded each `drawCombatants` rebuild. */
   private wieldAuras = new Map<string, Phaser.Time.TimerEvent>();
+  /** Stop handles for the weapon-hand fire on combatants wielding an
+   *  `aflame` weapon (Sun Sword). Keyed by combatant id; cleared with
+   *  `wieldAuras` on init / rebuild and reconciled on gear swaps. */
+  private handFlames = new Map<string, () => void>();
   /** Alpha-yoyo tween that pulses a Thief's body sprite while
    *  Shadow Step is "active" — i.e. between the killing bump that
    *  triggered the ability and the moment the thief's turn ends.
@@ -1146,6 +1151,8 @@ export class CombatScene extends Phaser.Scene {
     // a glowAura at a destroyed sprite's last-known coords.
     for (const t of this.wieldAuras.values()) t.remove();
     this.wieldAuras.clear();
+    for (const stop of this.handFlames.values()) stop();
+    this.handFlames.clear();
     // Same belt-and-braces for the shadow-step pulse — Phaser's
     // shutdown should kill the tween, but a fast re-entry has been
     // known to leak. stopShadowStepPulse is safe to call when no
@@ -2921,6 +2928,8 @@ export class CombatScene extends Phaser.Scene {
     // we're about to destroy, so cancelling here closes the race.
     for (const t of this.wieldAuras.values()) t.remove();
     this.wieldAuras.clear();
+    for (const stop of this.handFlames.values()) stop();
+    this.handFlames.clear();
     for (const b of this.monsterHpBars.values()) {
       b.bg?.destroy();
       b.bar?.destroy();
@@ -2982,6 +2991,7 @@ export class CombatScene extends Phaser.Scene {
       if (typeof c.wieldAuraColor === "number") {
         this.startWielderAura(c.id, c.wieldAuraColor);
       }
+      if (c.wieldFlame) this.startWielderFlame(c.id);
 
       // Floating HP bar above each enemy. The party gets full HP/MP
       // cards in the HUD, so we keep the arena uncluttered for them.
@@ -7300,7 +7310,46 @@ export class CombatScene extends Phaser.Scene {
    *     pulsing in the current colour, which is fine even when the
    *     player re-equipped a different aura-bearing weapon of the
    *     same colour). */
+  /** Burning weapon hand for an `aflame` wielder — follows the live
+   *  body sprite (so it rides along with move / attack tweens) and
+   *  pauses while the combatant is down or the sprite is gone. */
+  private startWielderFlame(combatantId: string): void {
+    this.handFlames.get(combatantId)?.();
+    const stop = startHandFlame(
+      this,
+      () => {
+        const body = this.bodies.get(combatantId) as
+          | Phaser.GameObjects.Image
+          | Phaser.GameObjects.Rectangle
+          | undefined;
+        if (!body || !body.active || !body.visible) return null;
+        const c = this.combat?.combatants.find((x) => x.id === combatantId);
+        if (!c || c.hp <= 0) return null;
+        return {
+          x: body.x,
+          y: body.y,
+          size: body.displayWidth,
+          // Image bodies turn to face their travel; Rectangle bodies
+          // (no art) have no facing.
+          flip: "flipX" in body ? body.flipX : false,
+        };
+      },
+      // Above the darkness / infravision overlays (20–21) so a
+      // burning blade still reads in a dark arena; below the HUD.
+      { depth: 22 },
+    );
+    this.handFlames.set(combatantId, stop);
+  }
+
   private syncWielderAura(c: Combatant): void {
+    // Weapon-hand fire follows the same equip / unequip reconcile.
+    const flame = this.handFlames.get(c.id);
+    if (c.wieldFlame && !flame) this.startWielderFlame(c.id);
+    else if (!c.wieldFlame && flame) {
+      flame();
+      this.handFlames.delete(c.id);
+    }
+
     const live = this.wieldAuras.get(c.id) ?? null;
     const color = c.wieldAuraColor;
     if (typeof color === "number") {

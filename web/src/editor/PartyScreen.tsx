@@ -205,6 +205,8 @@ export interface PartyAbilityRef {
 
 export interface PartyItemRef {
   id: string;
+  /** Burning item (Sun Sword) — its icon flickers with fire. */
+  aflame?: boolean;
   /** Lore id — the item is a readable book / scroll / letter. */
   lore?: string;
   name?: string;
@@ -1822,7 +1824,7 @@ export function PartyScreen({
                         .filter(Boolean)
                         .join("\n")}
                     >
-                      <ItemSprite icon={cat?.icon} size={18} />
+                      <ItemSprite icon={cat?.icon} aflame={cat?.aflame} size={18} />
                       <span className="truncate">
                         {label}
                         {qty > 1 ? (
@@ -2214,7 +2216,7 @@ function ItemDetails({
     <div className="mx-2 mb-1 mt-0.5 rounded border border-parchment/20 bg-ink/70 p-2 text-[13px] text-parchment/85">
       <div className="flex items-start gap-3">
         <span className="shrink-0 rounded border border-parchment/20 bg-ink/80 p-1">
-          <ItemSprite icon={item.icon} size={48} />
+          <ItemSprite icon={item.icon} aflame={item.aflame} size={48} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="font-display text-base text-parchment">
