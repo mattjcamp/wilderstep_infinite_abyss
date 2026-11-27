@@ -207,6 +207,8 @@ export interface PartyItemRef {
   id: string;
   /** Burning item (Sun Sword) — its icon flickers with fire. */
   aflame?: boolean;
+  /** Effect granted while equipped (`magic_light` = permanent Light). */
+  grants_effect?: string;
   /** Lore id — the item is a readable book / scroll / letter. */
   lore?: string;
   name?: string;
@@ -490,6 +492,7 @@ export function PartyScreen({
   abilityCooldowns,
   onUnequipSlot,
   effectDurations,
+  effectSources,
   onClose,
   onSheetBackChange,
   onEquipItem,
@@ -579,6 +582,10 @@ export function PartyScreen({
    *  synthesized row so the player can see the timer. Counters at
    *  zero are treated as "no duration shown." */
   effectDurations?: ReadonlyMap<string, number>;
+  /** Where an effect comes from when it isn't cast or toggled — e.g.
+   *  `magic_light` → "Sun Sword" while the sword is equipped. Shown
+   *  as a "from …" note on the effect's row. */
+  effectSources?: ReadonlyMap<string, string>;
   /** Dismiss callback — when provided, PartyScreen owns Escape
    *  handling end-to-end: pressing Escape in the regular two-pane
    *  view calls this; pressing Escape inside a drilled-in
@@ -813,12 +820,21 @@ export function PartyScreen({
         action: { kind: "item", inventoryIndex: firstIdx },
       });
     }
+    // Effects held up by gear (Light from the Sun Sword) say so.
+    if (effectSources) {
+      for (const r of rows) {
+        if (r.kind !== "effect" || r.note) continue;
+        const src = effectSources.get(r.ability.id);
+        if (src) r.note = `from ${src}`;
+      }
+    }
     return rows;
   }, [
     abilities,
     unlocked,
     activeEffectIds,
     effectDurations,
+    effectSources,
     party.inventory,
     itemById,
     members,

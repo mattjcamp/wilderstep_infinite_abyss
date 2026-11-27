@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { MapSimulation, type SceneBridge } from "./MapSimulation";
 import type { SimGrid, SimCell, SimParty, SimEvent } from "./types";
-import { TORCH_LIGHT_RANGE } from "./types";
+import { TORCH_LIGHT_RANGE, MAGIC_LIGHT_RANGE } from "./types";
 import {
   ensureQuestStates,
   parseQuestsFile,
@@ -869,6 +869,25 @@ describe("MapSimulation.stepInDirection — side effects", () => {
       items: [{ id: "torch", item_type: "torch", light_range: 8 }],
     });
     expect(sim.snapshot().lightRange).toBe(0);
+  });
+
+  it("an equipped Light item (Sun Sword) keeps the party lit, and refreshLight relights on unequip", () => {
+    let wielding = true;
+    const bridge = fakeBridge();
+    const sim = new MapSimulation({
+      grid: makeGrid(),
+      party: { ...makeParty(), torch_steps: 0 },
+      catalog: { characters: [], races: [], effects: [] },
+      classNameById: new Map(),
+      bridge,
+      getItemLight: () => wielding,
+    });
+    expect(sim.snapshot().lightRange).toBe(MAGIC_LIGHT_RANGE);
+    wielding = false;
+    sim.refreshLight();
+    expect(sim.snapshot().lightRange).toBe(0);
+    const calls = (bridge.setPartyLight as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls[calls.length - 1]?.[0]).toBeNull();
   });
 
   it("calls bridge.setPartyAt for successful walks", () => {

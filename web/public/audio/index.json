@@ -82,6 +82,7 @@
     {
       "path": "/audio/Ambient 1 Loop.mp3",
       "name": "Ambient 1 Loop",
+      "gain": 0.8,
       "tags": [
         "Ambient"
       ]
@@ -89,6 +90,7 @@
     {
       "path": "/audio/Ambient 10 Loop.mp3",
       "name": "Ambient 10 Loop",
+      "gain": 0.8,
       "tags": [
         "Ambient"
       ]
@@ -103,6 +105,7 @@
     {
       "path": "/audio/Ambient 12 Loop.mp3",
       "name": "Ambient 12 Loop",
+      "gain": 0.75,
       "tags": [
         "Ambient"
       ]

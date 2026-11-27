@@ -25,9 +25,10 @@
  * carries. Pressing P / ESC / clicking the backdrop dismisses.
  */
 
+import { partyItemLightSources } from "@/play/itemLight";
 import { isModalKeyLocked, useModalKeyLock } from "@/play/modalKeyLock";
 import { getModuleSource } from "@/data_model/sourceConfig";
-import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
@@ -281,6 +282,25 @@ export function PlayPartyScreenOverlay({
    *  re-render the screen instantly without waiting for PlayHost to
    *  round-trip the change through its own state. */
   const [liveSave, setLiveSave] = useState<WorldSave>(save);
+  /** A living member has a Light-granting item equipped (Sun Sword) —
+   *  the Effects list then shows Light as on, with no countdown. */
+  const itemLightSources =
+    state.kind === "ok"
+      ? partyItemLightSources(liveSave.party, (id) =>
+          state.items.find((i) => i.id === id),
+        )
+      : [];
+  const itemLight = itemLightSources.length > 0;
+  // Stable identity so PartyScreen's row memo doesn't rebuild on every
+  // render just because a fresh Map was passed.
+  const itemLightNote = itemLightSources.join(", ");
+  const effectSources = useMemo(
+    () =>
+      itemLightNote
+        ? new Map([["magic_light", itemLightNote]])
+        : undefined,
+    [itemLightNote],
+  );
   useEffect(() => {
     setLiveSave(save);
     // Re-sync the effects list whenever the upstream save changes —
@@ -1992,8 +2012,13 @@ export function PlayPartyScreenOverlay({
               abilities={state.abilities}
               items={state.items}
               spells={state.spells}
-              activeEffectIds={activeEffectIds}
+              activeEffectIds={
+                itemLight && !activeEffectIds.includes("magic_light")
+                  ? [...activeEffectIds, "magic_light"]
+                  : activeEffectIds
+              }
               onActiveEffectsChange={handleActiveEffectsChange}
+              effectSources={effectSources}
               onClose={onClose}
               onUseStashItem={handleUseStashItem}
               onUsePersonalItem={handleUsePersonalItem}
@@ -2035,7 +2060,14 @@ export function PlayPartyScreenOverlay({
               })()}
               effectDurations={
                 new Map<string, number>([
-                  ["magic_light", liveSave.party.magic_light_steps ?? 0],
+                  // An equipped Light item (Sun Sword) keeps Light on
+                  // with no countdown — drop the counter so the row
+                  // reads from the active list instead.
+                  ...(itemLight
+                    ? []
+                    : ([
+                        ["magic_light", liveSave.party.magic_light_steps ?? 0],
+                      ] as [string, number][])),
                   ["torch", liveSave.party.torch_steps ?? 0],
                   [
                     "repel_monsters",

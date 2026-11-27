@@ -299,7 +299,7 @@
       "ac_bonus": 0,
       "bonus_damage": "1d6",
       "damage_type": "fire",
-      "grants_effect": "sun_sword_aura",
+      "grants_effect": "magic_light",
       "wielder_passives": [
         "fire_resistance"
       ],

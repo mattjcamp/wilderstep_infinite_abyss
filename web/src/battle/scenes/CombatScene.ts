@@ -1895,7 +1895,7 @@ export class CombatScene extends Phaser.Scene {
         : this.combat?.combatants.find((c) => c.side === "party" && c.hp > 0)
             ?.position ?? { col: 1, row: 1 };
     const lit = brightnessAt(
-      col, row, this.staticLights, partyAnchor, PARTY_LIGHT_RADIUS,
+      col, row, this.arenaLights(), partyAnchor, PARTY_LIGHT_RADIUS,
     ) > 0;
     if (lit) return true;
     // Infravision band — a cell in the active actor's LOS is
@@ -2142,6 +2142,21 @@ export class CombatScene extends Phaser.Scene {
     }
   }
 
+  /** Every light in the arena right now: the fixed pools
+   *  (`staticLights` — torches, fire, Light spells) plus the Light
+   *  carried by any standing combatant with a Light-granting item
+   *  equipped (Sun Sword), centred on their current cell so it moves
+   *  with them. */
+  private arenaLights(): LightSource[] {
+    const carried: LightSource[] = [];
+    for (const c of this.combat?.combatants ?? []) {
+      if (c.hp > 0 && typeof c.wieldLight === "number" && c.wieldLight > 0) {
+        carried.push({ col: c.position.col, row: c.position.row, radius: c.wieldLight });
+      }
+    }
+    return carried.length ? [...this.staticLights, ...carried] : this.staticLights;
+  }
+
   private refreshDarkness(): void {
     // When the fight isn't dark — a bright arena, or Daylight has
     // banished the dark (it flips `this.darkness` off) — there's no
@@ -2185,13 +2200,14 @@ export class CombatScene extends Phaser.Scene {
       return cell?.obstructs === true;
     };
     const MAX_DARKNESS = 0.92;
+    const lights = this.arenaLights();
     for (let r = 0; r < ARENA_ROWS; r++) {
       for (let c = 0; c < ARENA_COLS; c++) {
         // Wall ring already paints itself as solid dark fill, no point
         // double-darkening it.
         if (isWall(c, r)) continue;
         const b = brightnessAt(
-          c, r, this.staticLights, partyAnchor, PARTY_LIGHT_RADIUS,
+          c, r, lights, partyAnchor, PARTY_LIGHT_RADIUS,
         );
         // Infravision band — cell is dark (no light source reached
         // it) but the active actor has LOS to it. Painted on the

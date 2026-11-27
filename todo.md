@@ -1,7 +1,7 @@
 # TODO
 
 # Varnfell
-- Tighten up The Deep Ones narrative, try to tie in the Cleric's healing ability
+- Tighten up The Deep Ones narrative, plug the Cleric's healing ability hole
 
 # Notes
 

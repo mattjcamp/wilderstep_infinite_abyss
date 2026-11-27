@@ -41,6 +41,7 @@ import { withBasePath } from "@/util/basePath";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { ChestDialogOverlay } from "@/editor/ChestDialogOverlay";
+import { partyHasItemLight } from "@/play/itemLight";
 import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
 import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
 import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
@@ -842,8 +843,27 @@ function partyWieldsAflame(
   return result;
 }
 
+/** Living party member holds a Light-granting item (Sun Sword)?
+ *  Read on every relight, so cached per save object like
+ *  {@link partyWieldsAflame}. */
+const itemLightCache = new WeakMap<object, boolean>();
+function partyItemLight(
+  save: WorldSave | null,
+  items: ReadonlyArray<PlayItem> | undefined,
+): boolean {
+  if (!save || !items) return false;
+  const cached = itemLightCache.get(save);
+  if (cached !== undefined) return cached;
+  const byId = new Map(items.map((i) => [i.id, i] as const));
+  const result = partyHasItemLight(save.party, (id) => byId.get(id));
+  itemLightCache.set(save, result);
+  return result;
+}
+
 interface PlayItem {
   id: string;
+  /** Effect the item grants while equipped (`magic_light` = Light). */
+  grants_effect?: string;
   name?: string;
   description?: string;
   icon?: string;
@@ -5247,6 +5267,8 @@ export function PlayHost() {
             // Live clock for time / moon-gated lairs (spawns with
             // active_time_of_day / active_moon_phases).
             getClockMinutes: () => clockRef.current,
+            getItemLight: () =>
+              partyItemLight(saveRef.current, catalogRef.current?.items),
             npcCanWander: (() => {
               const behaviorById = new Map<string, unknown>();
               for (const n of catalog.npcs) behaviorById.set(n.id, n.behavior);
@@ -8486,6 +8508,12 @@ export function PlayHost() {
                 (prev.party.magic_light_steps ?? 0)
               ) {
                 sim.castLightSpell(next.party.magic_light_steps ?? 0);
+              }
+              // Equipping / unequipping a Light-granting item (Sun
+              // Sword) — relight now rather than on the next step.
+              const items = catalogRef.current?.items;
+              if (partyItemLight(next, items) !== partyItemLight(prev, items)) {
+                sim.refreshLight();
               }
               // Priest's Push spell — castRepelSpell reseeds the
               // repel counter so monsters start fleeing. The cast-

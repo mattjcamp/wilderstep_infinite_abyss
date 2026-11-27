@@ -14,6 +14,7 @@
 
 import { CARRIED_STATUSES, MAP_STEPS_PER_ROUND } from "./effects/statusEffects";
 import type { Combatant, DamageRoll } from "../types";
+import { equippedGrantsLight, ITEM_LIGHT_RADIUS } from "@/play/itemLight";
 import type { MonsterPassive } from "../data/monsters";
 import type { PartyMember, Party, EquipmentSlots } from "../world/Party";
 import type { Item } from "../world/Items";
@@ -377,6 +378,9 @@ export function combatantFromMember(
       ? equippedWeapon.combat_aura.color
       : undefined;
   const wieldFlame = equippedWeapon?.aflame === true || undefined;
+  const wieldLight = equippedGrantsLight(member.equipped, (id) => items.get(id))
+    ? ITEM_LIGHT_RADIUS
+    : undefined;
   return {
     id: `pm:${member.id}`,
     name: member.name,
@@ -419,6 +423,7 @@ export function combatantFromMember(
     passives: wielderPassives,
     wieldAuraColor,
     wieldFlame,
+    wieldLight,
   };
 }
 
@@ -497,6 +502,9 @@ export function refreshCombatantGear(
       ? weapon.combat_aura.color
       : undefined;
   c.wieldFlame = weapon?.aflame === true || undefined;
+  c.wieldLight = equippedGrantsLight(member.equipped, (id) => items.get(id))
+    ? ITEM_LIGHT_RADIUS
+    : undefined;
 }
 
 /**

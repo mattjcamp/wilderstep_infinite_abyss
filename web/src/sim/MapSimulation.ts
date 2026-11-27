@@ -782,6 +782,12 @@ export interface MapSimulationOptions {
    *  lair stops spawning and its roamers slink away. Omitted (editor
    *  sim, tests) or returning null → every lair counts as active. */
   getClockMinutes?: () => number | null;
+  /** True while a living party member has a Light-granting item
+   *  equipped (Sun Sword) — the party then carries Light permanently,
+   *  on top of any torch / spell. Omitted = never. Call
+   *  {@link MapSimulation.refreshLight} after equipment changes so the
+   *  map relights without waiting for the next step. */
+  getItemLight?: () => boolean;
 }
 
 /** The simulation controller. One per active sim session; mounted by
@@ -924,6 +930,8 @@ export class MapSimulation {
   private readonly npcCanWander?: (npcId: string) => boolean;
   /** See {@link MapSimulationOptions.getClockMinutes}. */
   private readonly getClockMinutes?: () => number | null;
+  /** See {@link MapSimulationOptions.getItemLight}. */
+  private readonly getItemLight?: () => boolean;
   private disposed = false;
 
   constructor(opts: MapSimulationOptions) {
@@ -973,6 +981,7 @@ export class MapSimulation {
     this.npcWanderEnabled = opts.enableNpcWander ?? false;
     this.npcCanWander = opts.npcCanWander;
     this.getClockMinutes = opts.getClockMinutes;
+    this.getItemLight = opts.getItemLight;
     // Mutation state — seeded from per-session options so a host
     // remounting the same grid (e.g. dungeon floor revisits)
     // resumes where it left off. Cloned into new Sets so the
@@ -2535,6 +2544,15 @@ export class MapSimulation {
     this.emit({ kind: "state" });
   }
 
+  /** Re-derive the party's light (torch / Light spell / equipped
+   *  Light item) and relight the map — for equipment changes made
+   *  outside a step (Party screen equip / unequip). */
+  refreshLight(): void {
+    if (this.disposed) return;
+    this.bridge.setPartyLight(this.computeLightSource());
+    this.bridge.relight();
+  }
+
   /** Cast the Cleric's Light spell — sets a step countdown for the
    *  divine-light party effect that bumps the party's emitted light
    *  radius by MAGIC_LIGHT_RANGE for `steps` moves. MP deduction is
@@ -3411,7 +3429,9 @@ export class MapSimulation {
           : TORCH_LIGHT_RANGE,
       );
     }
-    if ((this.party.magic_light_steps ?? 0) > 0) {
+    // Light from the spell's countdown, or permanently from an
+    // equipped Light-granting item (Sun Sword).
+    if ((this.party.magic_light_steps ?? 0) > 0 || this.getItemLight?.()) {
       best = Math.max(best, MAGIC_LIGHT_RANGE);
     }
     return best;

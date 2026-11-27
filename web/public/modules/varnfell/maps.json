@@ -29730,8 +29730,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "object_bones",
+            "name": "Bones",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -29741,8 +29741,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/bones.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -30281,19 +30282,20 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "object_brazier",
+            "name": "Brazier",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
+            "light_source": true,
+            "light_range": 5,
+            "animation": "torch",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/brazier.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -31152,8 +31154,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "object_bones",
+            "name": "Bones",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -31163,8 +31165,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/bones.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -31298,8 +31301,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "object_bones",
+            "name": "Bones",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -31309,8 +31312,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/bones.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -31992,8 +31996,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "object_bones",
+            "name": "Bones",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -32003,8 +32007,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/bones.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -32428,8 +32433,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "object_bones",
+            "name": "Bones",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -32439,8 +32444,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/bones.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -32509,19 +32515,20 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "object_brazier",
+            "name": "Brazier",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
+            "light_source": true,
+            "light_range": 5,
+            "animation": "torch",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/brazier.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -32833,8 +32840,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "object_bones",
+            "name": "Bones",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -32844,8 +32851,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/bones.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -33299,8 +33307,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "object_bones",
+            "name": "Bones",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -33310,8 +33318,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/bones.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -33332,7 +33341,10 @@
         ]
       ],
       "fog_of_war": false,
-      "lighting": "day"
+      "lighting": "darkness",
+      "soundtrack": [
+        "/audio/Action 2 Loop.mp3"
+      ]
     },
     {
       "id": "outdoor_arena",
@@ -434587,7 +434599,8 @@
             "background_sprite": "dungeons/manor/floors/floor_marble.png"
           }
         ]
-      ]
+      ],
+      "lighting": "twilight"
     },
     {
       "id": "glen_hold",

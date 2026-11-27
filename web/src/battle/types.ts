@@ -72,6 +72,11 @@ export interface Combatant {
    *  CombatScene keeps a small fire burning at the body's weapon
    *  hand while the combatant is alive. */
   wieldFlame?: boolean;
+  /** Radius (tiles) of Light carried by this combatant — set when they
+   *  have a Light-granting item equipped (Sun Sword). In a dark battle
+   *  the CombatScene lights a pool around their current cell for as
+   *  long as they're standing; absent = no carried light. */
+  wieldLight?: number;
   /** Full ability scores carried over from the PartyMember (or
    *  monster spec). Optional because legacy fixtures and some of the
    *  combat tests omit them — combat helpers default each to 10
