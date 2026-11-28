@@ -191685,7 +191685,7 @@
             "background_sprite": "map/grass.png"
           },
           {
-            "boat": true,
+            "boat": false,
             "id": "lake_edge_top",
             "name": "Lake Shore (top land)",
             "walkable": false,
@@ -191700,8 +191700,7 @@
             "sprite": "water/lake/lake_edge_top.png",
             "tag": "Water:Lake",
             "water": true,
-            "background_sprite": "map/grass.png",
-            "boat_sprite": "map/boat_small.png"
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -205348,9 +205347,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "object_notice_board",
+            "name": "Notice Board",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -205359,8 +205358,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/notice_board.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png",
+            "board": "hollowmere_notice"
           },
           {
             "boat": false,
@@ -311229,7 +311230,11 @@
         "/audio/Stairway To Heaven.mp3",
         "/audio/Stayin' Alive.mp3",
         "/audio/Thunderstruck.mp3"
-      ]
+      ],
+      "passive_regen": {
+        "hp": 1,
+        "mp": 1
+      }
     },
     {
       "id": "otto_inn_2",

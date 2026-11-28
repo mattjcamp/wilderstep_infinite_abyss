@@ -1,0 +1,104 @@
+{
+  "quests": [
+    {
+      "id": "the_giant_bats",
+      "name": "Bats in the Inn",
+      "description": "The inn has become infested with Giant Bats",
+      "tags": [],
+      "steps": [
+        {
+          "id": "the_giant_bats_step_1",
+          "name": "Step 1",
+          "kind": "kill",
+          "encounter_id": "giant_bats",
+          "location_kind": "map",
+          "map_id": "otto_inn_1",
+          "count": 2,
+          "description": "Remove the bats from the Inn"
+        }
+      ],
+      "rewards": {
+        "xp": 50,
+        "gold": 50
+      },
+      "boards": [
+        "hollowmere_notice"
+      ]
+    },
+    {
+      "id": "rats_in_basement",
+      "name": "Rat's in Otto's Basement",
+      "description": "There are Giant Rats infesting the basement of Otto's Inn. Cash for anyone foolish enough to try and deal with that.",
+      "tags": [],
+      "steps": [
+        {
+          "id": "rats_in_basement_step_1",
+          "name": "Step 1 Exterminate the Giant Rats in Otto's basement",
+          "kind": "kill",
+          "encounter_id": "giant_rats",
+          "count": 3,
+          "location_kind": "map",
+          "map_id": "otto_inn_2",
+          "description": "Otto can't replenish the Hallowmere Lager because there are Giant Rats infesting his basement"
+        }
+      ],
+      "rewards": {
+        "xp": 100,
+        "gold": 100
+      },
+      "boards": [
+        "hollowmere_notice"
+      ]
+    },
+    {
+      "id": "zombies_basement",
+      "name": "Zombies in Otto's Basement",
+      "description": "Rumor has it that in the deeper levels of Otto's basement, there are walking deal. We should deal with that.",
+      "tags": [],
+      "steps": [
+        {
+          "id": "zombies_basement_step_1",
+          "name": "Step 1 Remove the walking dead",
+          "kind": "kill",
+          "encounter_id": "restless_dead",
+          "count": 3,
+          "location_kind": "map",
+          "map_id": "grotto_1_l1",
+          "description": "Rumors of walking dead are deep in Otto's basement"
+        }
+      ],
+      "rewards": {
+        "xp": 200,
+        "gold": 200
+      },
+      "boards": [
+        "hollowmere_notice"
+      ]
+    },
+    {
+      "id": "bandit_ring",
+      "name": "The Bandit Ring",
+      "description": "Bandits are rumored to be operating from deep below Otto's Inn. Anyone with information who can deal with these guys will be rewarded.",
+      "tags": [],
+      "steps": [
+        {
+          "id": "bandit_ring_step_1",
+          "name": "Step 1 Deal with the Bandits in the Basement",
+          "kind": "kill",
+          "description": "It is rumored that bandits are operating deep within the cave system under Otto's Inn.",
+          "encounter_id": "bandit_ambush",
+          "count": 4,
+          "location_kind": "map",
+          "map_id": "grotto_1_l2"
+        }
+      ],
+      "rewards": {
+        "xp": 400,
+        "gold": 400
+      },
+      "boards": [
+        "hollowmere_notice"
+      ]
+    }
+  ]
+}

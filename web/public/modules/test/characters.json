@@ -87,6 +87,94 @@
         "body": "leather"
       },
       "inventory": []
+    },
+    {
+      "id": "fighter",
+      "name": "Fighter",
+      "class": "fighter",
+      "race": "dwarf",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 17,
+      "mp": 0,
+      "strength": 13,
+      "dexterity": 9,
+      "constitution": 15,
+      "intelligence": 9,
+      "wisdom": 8,
+      "sprite": "person/dwarf_male_fighter.png",
+      "equipped": {
+        "hands": "club",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "thief",
+      "name": "Thief",
+      "class": "thief",
+      "race": "halfling",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 8,
+      "mp": 0,
+      "strength": 9,
+      "dexterity": 18,
+      "constitution": 11,
+      "intelligence": 8,
+      "wisdom": 8,
+      "sprite": "person/halfling_male_thief.png",
+      "equipped": {
+        "hands": "club",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "cleric",
+      "name": "Cleric",
+      "class": "cleric",
+      "race": "human",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 9,
+      "mp": 12,
+      "strength": 11,
+      "dexterity": 9,
+      "constitution": 12,
+      "intelligence": 8,
+      "wisdom": 15,
+      "sprite": "person/person_male_cleric.png",
+      "equipped": {
+        "hands": "club",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "alchemist",
+      "name": "Alchemist",
+      "class": "alchemist",
+      "race": "human",
+      "gender": "Female",
+      "level": 1,
+      "exp": 0,
+      "hp": 5,
+      "mp": 12,
+      "strength": 8,
+      "dexterity": 12,
+      "constitution": 9,
+      "intelligence": 18,
+      "wisdom": 8,
+      "sprite": "person/person_female_alchemist.png",
+      "equipped": {
+        "hands": "dagger",
+        "body": "cloth"
+      },
+      "inventory": []
     }
   ]
 }
