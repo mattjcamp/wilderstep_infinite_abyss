@@ -1154,8 +1154,8 @@
       "id": "genevieve",
       "name": "Genevieve",
       "sprite": "person/person_female_villager_wealthy.png",
-      "counter": null,
-      "personal_history": "",
+      "counter": "armor",
+      "personal_history": null,
       "dialogs": [],
       "behavior": "wander",
       "exploration_xp": 25
@@ -1164,8 +1164,8 @@
       "id": "millicent",
       "name": "Millicent",
       "sprite": "person/person_female_villager_poor.png",
-      "counter": null,
-      "personal_history": "",
+      "counter": "weapon",
+      "personal_history": null,
       "dialogs": [],
       "behavior": "wander",
       "exploration_xp": 25
