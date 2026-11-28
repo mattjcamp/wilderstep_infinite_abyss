@@ -1,8 +1,8 @@
 {
   "start_position": {
-    "map_id": "oracle_3",
+    "map_id": "varnfell",
     "col": 5,
-    "row": 4
+    "row": 73
   },
   "avatar": "person/person_male_paladin.png",
   "inventory": [
@@ -12,7 +12,7 @@
     },
     {
       "item": "rock",
-      "charges": 10
+      "charges": 20
     },
     {
       "item": "lockpick",
@@ -21,10 +21,6 @@
     {
       "item": "camping_supplies",
       "charges": 2
-    },
-    {
-      "item": "arrows",
-      "charges": 25
     }
   ]
 }
