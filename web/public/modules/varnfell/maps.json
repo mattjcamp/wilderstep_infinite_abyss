@@ -199359,7 +199359,7 @@
             "light_source": false,
             "light_range": 0,
             "animation": "none",
-            "counter": "general",
+            "counter": "potion_shop",
             "encounter": null,
             "spawn": null,
             "sprite": "town/market_stall/market_stall.png",
@@ -200810,7 +200810,7 @@
             "light_source": false,
             "light_range": 0,
             "animation": "none",
-            "counter": "general",
+            "counter": "reagent",
             "encounter": null,
             "spawn": null,
             "sprite": "town/market_stall/market_stall.png",
@@ -281056,7 +281056,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeons/cave/floors/floor_dirt.png",
-            "tag": "Dungeons:cave:floors"
+            "tag": "Dungeons:cave:floors",
+            "npc": "albert"
           },
           {
             "boat": false,
@@ -283262,6 +283263,7 @@
           },
           {
             "boat": false,
+            "background_sprite": "map/grass.png",
             "id": "shop_table_single",
             "name": "Shop Table, Small",
             "walkable": false,
@@ -283274,11 +283276,11 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeons/shop/features/table_single.png",
-            "tag": "Dungeons:shop:features",
-            "background_sprite": "map/grass.png"
+            "tag": "Dungeons:shop:features"
           },
           {
             "boat": false,
+            "background_sprite": "map/grass.png",
             "id": "shop_table_single",
             "name": "Shop Table, Small",
             "walkable": false,
@@ -283291,8 +283293,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeons/shop/features/table_single.png",
-            "tag": "Dungeons:shop:features",
-            "background_sprite": "map/grass.png"
+            "tag": "Dungeons:shop:features"
           },
           {
             "id": "water",
@@ -284980,7 +284981,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeons/cave/floors/floor_dirt.png",
-            "tag": "Dungeons:cave:floors"
+            "tag": "Dungeons:cave:floors",
+            "npc": "agetha"
           },
           {
             "boat": false,
@@ -288400,7 +288402,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeons/cave/floors/floor_dirt.png",
-            "tag": "Dungeons:cave:floors"
+            "tag": "Dungeons:cave:floors",
+            "npc": "wanda"
           },
           {
             "boat": false,
@@ -290840,7 +290843,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeons/cave/floors/floor_dirt.png",
-            "tag": "Dungeons:cave:floors"
+            "tag": "Dungeons:cave:floors",
+            "npc": "leroy"
           },
           {
             "boat": false,

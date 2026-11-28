@@ -1299,6 +1299,46 @@
       "dialogs": [],
       "behavior": "wander",
       "exploration_xp": 25
+    },
+    {
+      "id": "albert",
+      "name": "Albert",
+      "sprite": "person/dwarf_male.png",
+      "counter": "armor",
+      "personal_history": null,
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 0
+    },
+    {
+      "id": "wanda",
+      "name": "Wanda",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": "weapon",
+      "personal_history": null,
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 0
+    },
+    {
+      "id": "leroy",
+      "name": "Leryo",
+      "sprite": "person/gnome_male_villager_normal.png",
+      "counter": "general",
+      "personal_history": null,
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 0
+    },
+    {
+      "id": "agetha",
+      "name": "Agetha",
+      "sprite": "person/person_male_druid.png",
+      "counter": "potion_shop",
+      "personal_history": null,
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 0
     }
   ]
 }
